@@ -12,6 +12,7 @@ import javafx.animation.TranslateTransition;
 import javafx.application.Platform;
 import javafx.geometry.Bounds;
 import javafx.geometry.Pos;
+import javafx.scene.Cursor;
 import javafx.scene.Node;
 import javafx.scene.control.Alert;
 import javafx.scene.control.Button;
@@ -116,6 +117,21 @@ public class MainScreen extends GameApplication {
             n.addEventFilter(MouseEvent.ANY, MouseEvent::consume);
         }
 
+        root.setCursor(Cursor.NONE);
+
+        for (Node n : menuBox.getChildren()) {
+            if (n instanceof Button) {
+                Button b = (Button) n;
+                if ("Continuar".equals(b.getText())) {
+                    boolean saveExists = (game != null && game.getSave() != null && game.getSave().exists());
+                    b.setDisable(!saveExists);
+                    if (b.isDisable()) {
+                        b.setStyle("-fx-background-color: rgba(80,80,80,0.5); -fx-text-fill: rgba(200,200,200,0.7);");
+                    }
+                }
+            }
+        }
+
         Platform.runLater(this::placeCursorImmediate);
         menuBox.boundsInParentProperty().addListener((o, oldB, newB) -> updateCursorSmooth());
         root.widthProperty().addListener((o, oldV, newV) -> updateCursorSmooth());
@@ -133,32 +149,64 @@ public class MainScreen extends GameApplication {
     }
 
     private void updateCursorStyles() {
-        for (int i = 0; i < menuBox.getChildren().size(); i++) {
+        int total = menuBox.getChildren().size();
+        if (total == 0) return;
+        if (selectedIndex >= total) selectedIndex = 0;
+
+        if (menuBox.getChildren().get(selectedIndex) instanceof Button
+                && ((Button) menuBox.getChildren().get(selectedIndex)).isDisable()) {
+            int start = selectedIndex;
+            boolean found = false;
+            int idx = selectedIndex;
+            while (!found) {
+                idx = (idx + 1) % total;
+                if (idx == start) break;
+                Node n = menuBox.getChildren().get(idx);
+                if (n instanceof Button && !((Button) n).isDisable()) {
+                    selectedIndex = idx;
+                    found = true;
+                    break;
+                }
+            }
+        }
+
+        for (int i = 0; i < total; i++) {
             Node n = menuBox.getChildren().get(i);
             if (n instanceof Button) {
                 Button b = (Button) n;
-
                 b.setWrapText(true);
                 b.setAlignment(Pos.CENTER);
 
+                if (b.isDisable()) {
+                    b.setStyle(
+                        "-fx-background-color: rgba(80,80,80,0.5);" +
+                        " -fx-text-fill: rgba(200,200,200,0.7);" +
+                        " -fx-background-radius: 6;" +
+                        " -fx-padding: 8 12 8 12;"
+                    );
+                    b.setEffect(null);
+                    b.setFont(Font.font(b.getFont().getFamily(), 20));
+                    continue;
+                }
+
                 if (i == selectedIndex) {
                     b.setStyle(
-                            "-fx-background-color: linear-gradient(#FFD54F, #FFC107);"
-                            + " -fx-text-fill: black;"
-                            + " -fx-font-weight: bold;"
-                            + " -fx-border-color: #FFD700;"
-                            + " -fx-border-width: 2;"
-                            + " -fx-background-radius: 6;"
-                            + " -fx-padding: 8 12 8 12;"
+                        "-fx-background-color: linear-gradient(#FFD54F, #FFC107);" +
+                        " -fx-text-fill: black;" +
+                        " -fx-font-weight: bold;" +
+                        " -fx-border-color: #FFD700;" +
+                        " -fx-border-width: 2;" +
+                        " -fx-background-radius: 6;" +
+                        " -fx-padding: 8 12 8 12;"
                     );
                     b.setEffect(new DropShadow(BlurType.GAUSSIAN, Color.rgb(0, 0, 0, 0.45), 8, 0.3, 0, 2));
                     b.setFont(Font.font(b.getFont().getFamily(), FontWeight.BOLD, 20));
                 } else {
                     b.setStyle(
-                            "-fx-background-color: rgba(0,0,0,0.6);"
-                            + " -fx-text-fill: white;"
-                            + " -fx-background-radius: 6;"
-                            + " -fx-padding: 8 12 8 12;"
+                        "-fx-background-color: rgba(0,0,0,0.6);" +
+                        " -fx-text-fill: white;" +
+                        " -fx-background-radius: 6;" +
+                        " -fx-padding: 8 12 8 12;"
                     );
                     b.setEffect(null);
                     b.setFont(Font.font(b.getFont().getFamily(), 20));
@@ -269,6 +317,17 @@ public class MainScreen extends GameApplication {
                         a.setTitle("Creada la partida correctamente");
                         a.setContentText("Creada la partida con nombre: " + name);
                         a.showAndWait();
+
+                        for (Node n : menuBox.getChildren()) {
+                            if (n instanceof Button) {
+                                Button b = (Button) n;
+                                if ("Continuar".equals(b.getText())) {
+                                    b.setDisable(false);
+                                    b.setStyle("-fx-background-color: rgba(0,0,0,0.6); -fx-text-fill: white; -fx-background-radius: 6; -fx-padding: 8 12 8 12;");
+                                }
+                            }
+                        }
+                        updateCursorSmooth();
                     } else {
                         a.setAlertType(Alert.AlertType.ERROR);
                         a.setTitle("No se pudo crear la partida");
