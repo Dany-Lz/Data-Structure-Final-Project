@@ -432,6 +432,17 @@ public class MainScreen extends GameApplication {
         }
     }
 
+    public static double getVolumeSetting() {
+        try {
+            var app = FXGL.getApp();
+            if (app instanceof MainScreen) {
+                return ((MainScreen) app).volumeSetting;
+            }
+        } catch (Throwable ignored) {
+        }
+        return 0.7;
+    }
+
     private void stopBackgroundMusic() {
         try {
             if (bgMusic != null) {
@@ -645,6 +656,20 @@ public class MainScreen extends GameApplication {
             }
         });
         fadeIn.play();
+    }
+
+    public static void hideMenu() {
+        Platform.runLater(() -> {
+            try {
+                if (rootPane != null) {
+                    FXGL.getGameScene().removeUINode(rootPane);
+                }
+                if (cursor != null) {
+                    FXGL.getGameScene().removeUINode(cursor);
+                }
+            } catch (Throwable ignored) {
+            }
+        });
     }
 
     public static void restoreMenuAndMusic() {
