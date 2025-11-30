@@ -31,34 +31,28 @@ import java.util.Set;
 
 public class FieldVillage {
 
-    private final StackPane root;        // viewport
-    private final Pane world;            // mundo (fondo + héroe) que se desplaza
+    private final StackPane root;
+    private final Pane world;
     private final StackPane loadingOverlay;
     private ImageView backgroundView;
     private MediaPlayer music;
 
-    // Hero
     private final ImageView heroView;
     private final double HERO_W = 48;
     private final double HERO_H = 48;
-    private final double HERO_SPEED = 180.0; // px/s
+    private final double HERO_SPEED = 180.0;
     private final Set<KeyCode> keys = new HashSet<>();
     private AnimationTimer mover;
 
-    // Viewport / world sizes
     private final double VIEW_W = 800;
     private final double VIEW_H = 600;
     private double worldW = VIEW_W;
     private double worldH = VIEW_H;
 
-    // Start rectangle (azul) que devuelve al mapa si se toca y se pulsa ENTER
     private Rectangle startRect;
     private boolean onStartRect = false;
 
-    // Callback que se ejecuta al salir de la aldea (volver al mapa)
     private Runnable onExitCallback;
-
-    // Referencia a Game para guardar el Hero
     private final Game game;
 
     public FieldVillage(Game game) {
@@ -66,25 +60,24 @@ public class FieldVillage {
         root = new StackPane();
         root.setPrefSize(VIEW_W, VIEW_H);
 
-        // world pane holds background and hero; we will translate world to simulate camera
         world = new Pane();
         world.setPrefSize(VIEW_W, VIEW_H);
 
         loadingOverlay = createLoadingOverlay();
 
-        // add world first, then overlay on top
         root.getChildren().addAll(world, loadingOverlay);
 
-        // create hero (added to world)
         heroView = createHeroView();
 
-        // input handlers and mover
         installInputHandlers();
         createMover();
+
+        // Limpia inputs al perder foco
+        root.focusedProperty().addListener((obs, wasFocused, isFocused) -> {
+            if (!isFocused) clearInputState();
+        });
     }
 
-    // Public API: show with loading overlay and start music/background
-    // onLoaded: se ejecuta tras la carga; onExit: se ejecuta cuando se quiere volver al mapa
     public void showWithLoading(Runnable onLoaded, Runnable onExit) {
         this.onExitCallback = onExit;
 
@@ -95,10 +88,7 @@ public class FieldVillage {
             boolean imageOk = loadBackgroundImage("/Resources/textures/fieldVillage.png");
             boolean musicOk = startVillageMusic("/Resources/music/fieldVillage.mp3");
 
-            // Position hero at bottom-center of the world (simula entrada desde abajo)
             positionHeroAtBottomCenter();
-
-            // create startRect at hero start position (azul)
             createStartRectAtHeroStart();
 
             PauseTransition wait = new PauseTransition(Duration.millis(600));
@@ -106,9 +96,7 @@ public class FieldVillage {
                 showLoading(false);
                 fadeInContent();
                 startMover();
-                if (onLoaded != null) {
-                    onLoaded.run();
-                }
+                if (onLoaded != null) onLoaded.run();
             });
             wait.play();
         });
@@ -118,14 +106,10 @@ public class FieldVillage {
         Platform.runLater(() -> {
             stopVillageMusic();
             stopMover();
-            try {
-                FXGL.getGameScene().removeUINode(root);
-            } catch (Throwable ignored) {
-            }
+            try { FXGL.getGameScene().removeUINode(root); } catch (Throwable ignored) {}
         });
     }
 
-    // ----------------- Loading / UI -----------------
     private StackPane createLoadingOverlay() {
         StackPane overlay = new StackPane();
         overlay.setPickOnBounds(true);
@@ -144,11 +128,8 @@ public class FieldVillage {
 
     private void showLoading(boolean show) {
         loadingOverlay.setVisible(show);
-        if (show) {
-            loadingOverlay.toFront();
-        } else {
-            loadingOverlay.toBack();
-        }
+        if (show) loadingOverlay.toFront();
+        else loadingOverlay.toBack();
     }
 
     private void fadeInContent() {
@@ -158,7 +139,6 @@ public class FieldVillage {
         ft.play();
     }
 
-    // ----------------- Background & Music -----------------
     private boolean loadBackgroundImage(String path) {
         try {
             Image img = new Image(getClass().getResourceAsStream(path));
@@ -166,25 +146,21 @@ public class FieldVillage {
             backgroundView.setPreserveRatio(false);
             backgroundView.setSmooth(true);
 
-            // Si la imagen es mayor que el viewport, la usamos como world; si no, la centramos y permitimos algo de scroll
             worldW = img.getWidth() > 0 ? img.getWidth() : VIEW_W;
             worldH = img.getHeight() > 0 ? img.getHeight() : VIEW_H;
 
             backgroundView.setFitWidth(worldW);
             backgroundView.setFitHeight(worldH);
 
-            // ajusta tamaño del world según la imagen
             world.setPrefSize(worldW, worldH);
             world.getChildren().clear();
             world.getChildren().add(backgroundView);
 
-            // añade el héroe encima del fondo
             if (!world.getChildren().contains(heroView)) {
                 world.getChildren().add(heroView);
             } else {
                 heroView.toFront();
             }
-
             return true;
         } catch (Throwable t) {
             Text err = new Text("No se pudo cargar la imagen de la aldea.");
@@ -197,9 +173,7 @@ public class FieldVillage {
     private boolean startVillageMusic(String path) {
         try {
             URL res = getClass().getResource(path);
-            if (res == null) {
-                return false;
-            }
+            if (res == null) return false;
             Media media = new Media(res.toExternalForm());
             stopVillageMusic();
             music = new MediaPlayer(media);
@@ -219,18 +193,13 @@ public class FieldVillage {
                 music.dispose();
                 music = null;
             }
-        } catch (Throwable ignored) {
-        }
+        } catch (Throwable ignored) {}
     }
 
-    // ----------------- Hero creation & movement -----------------
     private ImageView createHeroView() {
         Image img = null;
-        try {
-            img = new Image(getClass().getResourceAsStream("/Resources/sprites/hero.png"));
-        } catch (Throwable ignored) {
-            img = null;
-        }
+        try { img = new Image(getClass().getResourceAsStream("/Resources/sprites/hero.png")); }
+        catch (Throwable ignored) { img = null; }
         ImageView iv = new ImageView(img);
         iv.setPreserveRatio(true);
         iv.setFitWidth(HERO_W);
@@ -246,7 +215,6 @@ public class FieldVillage {
         startY = clamp(startY, 0, Math.max(0, worldH - HERO_H));
         heroView.setLayoutX(startX);
         heroView.setLayoutY(startY);
-
         updateCamera();
     }
 
@@ -255,7 +223,6 @@ public class FieldVillage {
             world.getChildren().remove(startRect);
             startRect = null;
         }
-
         double rx = heroView.getLayoutX();
         double ry = heroView.getLayoutY();
         double rw = HERO_W + 8;
@@ -276,36 +243,24 @@ public class FieldVillage {
     private void installInputHandlers() {
         root.addEventFilter(KeyEvent.KEY_PRESSED, ev -> {
             KeyCode k = ev.getCode();
-            if (k == KeyCode.W || k == KeyCode.UP) {
-                keys.add(KeyCode.W);
-            }
-            if (k == KeyCode.S || k == KeyCode.DOWN) {
-                keys.add(KeyCode.S);
-            }
-            if (k == KeyCode.A || k == KeyCode.LEFT) {
-                keys.add(KeyCode.A);
-            }
-            if (k == KeyCode.D || k == KeyCode.RIGHT) {
-                keys.add(KeyCode.D);
-            }
+            if (k == KeyCode.W || k == KeyCode.UP) keys.add(KeyCode.W);
+            if (k == KeyCode.S || k == KeyCode.DOWN) keys.add(KeyCode.S);
+            if (k == KeyCode.A || k == KeyCode.LEFT) keys.add(KeyCode.A);
+            if (k == KeyCode.D || k == KeyCode.RIGHT) keys.add(KeyCode.D);
 
             if (k == KeyCode.ENTER) {
                 if (onStartRect) {
-                    // guardar posición en Hero y ejecutar callback onExit
+                    // limpiar inputs antes de salir
+                    clearInputState();
                     try {
                         if (game != null && game.getHero() != null) {
                             Hero h = game.getHero();
                             h.setLastLocation(Hero.Location.FIELD_VILLAGE);
                             h.setLastPosX(heroView.getLayoutX());
                             h.setLastPosY(heroView.getLayoutY());
-                            try {
-                                game.createSaveGame();
-                            } catch (Throwable ignored) {
-                            }
+                            try { game.createSaveGame(); } catch (Throwable ignored) {}
                         }
-                    } catch (Throwable ignored) {
-                    }
-
+                    } catch (Throwable ignored) {}
                     if (onExitCallback != null) {
                         hide();
                         onExitCallback.run();
@@ -316,35 +271,42 @@ public class FieldVillage {
             }
 
             if (k == KeyCode.ESCAPE) {
-                // Mostrar confirmación antes de volver al menú (igual que en el mapa)
+                // limpiar inputs antes del diálogo
+                clearInputState();
+
                 Alert dlg = new Alert(Alert.AlertType.CONFIRMATION);
                 dlg.setTitle("Volver al menú");
                 dlg.setHeaderText("¿Quieres volver al menú principal?");
                 dlg.setContentText("Si vuelves al menú, la partida seguirá guardada en disco.");
+                try {
+                    if (root.getScene() != null && root.getScene().getWindow() != null) {
+                        dlg.initOwner(root.getScene().getWindow());
+                    }
+                } catch (Throwable ignored) {}
+                dlg.setOnHidden(eh -> {
+                    clearInputState();
+                    Platform.runLater(root::requestFocus);
+                });
+
                 Optional<ButtonType> opt = dlg.showAndWait();
                 boolean ok = opt.isPresent() && opt.get() == ButtonType.OK;
                 if (ok) {
-                    // guardar posición en Hero y volver al menú principal
                     try {
                         if (game != null && game.getHero() != null) {
                             Hero h = game.getHero();
                             h.setLastLocation(Hero.Location.FIELD_VILLAGE);
                             h.setLastPosX(heroView.getLayoutX());
                             h.setLastPosY(heroView.getLayoutY());
-                            try {
-                                game.createSaveGame();
-                            } catch (Throwable ignored) {
-                            }
+                            try { game.createSaveGame(); } catch (Throwable ignored) {}
                         }
-                    } catch (Throwable ignored) {
-                    }
+                    } catch (Throwable ignored) {}
 
                     stopVillageMusic();
-                    try {
-                        FXGL.getGameScene().removeUINode(root);
-                    } catch (Throwable ignored) {
-                    }
+                    try { FXGL.getGameScene().removeUINode(root); } catch (Throwable ignored) {}
                     MainScreen.restoreMenuAndMusic();
+                } else {
+                    clearInputState();
+                    Platform.runLater(root::requestFocus);
                 }
             }
 
@@ -353,82 +315,62 @@ public class FieldVillage {
 
         root.addEventFilter(KeyEvent.KEY_RELEASED, ev -> {
             KeyCode k = ev.getCode();
-            if (k == KeyCode.W || k == KeyCode.UP) {
-                keys.remove(KeyCode.W);
-            }
-            if (k == KeyCode.S || k == KeyCode.DOWN) {
-                keys.remove(KeyCode.S);
-            }
-            if (k == KeyCode.A || k == KeyCode.LEFT) {
-                keys.remove(KeyCode.A);
-            }
-            if (k == KeyCode.D || k == KeyCode.RIGHT) {
-                keys.remove(KeyCode.D);
-            }
+            if (k == KeyCode.W || k == KeyCode.UP) keys.remove(KeyCode.W);
+            if (k == KeyCode.S || k == KeyCode.DOWN) keys.remove(KeyCode.S);
+            if (k == KeyCode.A || k == KeyCode.LEFT) keys.remove(KeyCode.A);
+            if (k == KeyCode.D || k == KeyCode.RIGHT) keys.remove(KeyCode.D);
             ev.consume();
         });
 
         root.setFocusTraversable(true);
         root.sceneProperty().addListener((obs, oldScene, newScene) -> {
-            if (newScene != null) {
-                Platform.runLater(root::requestFocus);
-            }
+            if (newScene != null) Platform.runLater(root::requestFocus);
+            else clearInputState();
         });
     }
 
     private void createMover() {
         mover = new AnimationTimer() {
             private long last = -1;
-
             @Override
             public void handle(long now) {
-                if (last < 0) {
-                    last = now;
-                }
+                if (last < 0) last = now;
                 double dt = (now - last) / 1e9;
                 last = now;
+
+                // Watchdog: si no hay foco, no mover y limpiar inputs
+                if (root.getScene() == null || !root.isFocused()) {
+                    clearInputState();
+                    return;
+                }
+
                 updateAndMove(dt);
             }
         };
     }
 
     private void startMover() {
-        if (mover != null) {
-            mover.start();
-        }
+        if (mover != null) mover.start();
     }
 
     private void stopMover() {
-        if (mover != null) {
-            mover.stop();
-        }
+        if (mover != null) mover.stop();
     }
 
     private void updateAndMove(double dt) {
         double vx = 0;
         double vy = 0;
-        if (keys.contains(KeyCode.A)) {
-            vx -= HERO_SPEED;
-        }
-        if (keys.contains(KeyCode.D)) {
-            vx += HERO_SPEED;
-        }
-        if (keys.contains(KeyCode.W)) {
-            vy -= HERO_SPEED;
-        }
-        if (keys.contains(KeyCode.S)) {
-            vy += HERO_SPEED;
-        }
+        if (keys.contains(KeyCode.A)) vx -= HERO_SPEED;
+        if (keys.contains(KeyCode.D)) vx += HERO_SPEED;
+        if (keys.contains(KeyCode.W)) vy -= HERO_SPEED;
+        if (keys.contains(KeyCode.S)) vy += HERO_SPEED;
 
         if (vx == 0 && vy == 0) {
             checkStartIntersection();
             return;
         }
 
-        double dx = vx * dt;
-        double dy = vy * dt;
-
-        moveHero(dx, dy);
+        moveHero(vx * dt, vy * dt);
     }
 
     private void moveHero(double dx, double dy) {
@@ -452,14 +394,9 @@ public class FieldVillage {
         }
         boolean intersects = heroView.getBoundsInParent().intersects(startRect.getBoundsInParent());
         onStartRect = intersects;
-        if (intersects) {
-            startRect.setFill(Color.rgb(0, 120, 255, 0.42));
-        } else {
-            startRect.setFill(Color.rgb(0, 120, 255, 0.28));
-        }
+        startRect.setFill(intersects ? Color.rgb(0, 120, 255, 0.42) : Color.rgb(0, 120, 255, 0.28));
     }
 
-    // ----------------- Camera / viewport follow -----------------
     private void updateCamera() {
         double heroCenterX = heroView.getLayoutX() + HERO_W / 2.0;
         double heroCenterY = heroView.getLayoutY() + HERO_H / 2.0;
@@ -486,23 +423,21 @@ public class FieldVillage {
         world.setTranslateY(ty);
     }
 
-    // ----------------- Utilities -----------------
     private static double clamp(double v, double lo, double hi) {
-        double out = v;
-        if (out < lo) {
-            out = lo;
-        } else if (out > hi) {
-            out = hi;
-        }
-        return out;
+        if (v < lo) return lo;
+        if (v > hi) return hi;
+        return v;
     }
 
-    // Método público para que MainScreen pueda fijar la posición del héroe dentro de la aldea
     public void setHeroPosition(double x, double y) {
         double nx = clamp(x, 0, Math.max(0, worldW - HERO_W));
         double ny = clamp(y, 0, Math.max(0, worldH - HERO_H));
         heroView.setLayoutX(nx);
         heroView.setLayoutY(ny);
         updateCamera();
+    }
+
+    private void clearInputState() {
+        keys.clear();
     }
 }
