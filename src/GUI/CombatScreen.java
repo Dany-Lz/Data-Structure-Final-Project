@@ -34,6 +34,15 @@ import java.util.List;
 import java.util.Queue;
 import java.util.Random;
 
+/**
+ * CombatScreen completo con:
+ * - constructor: CombatScreen(Game game, String bgPath, List<String> monsterSpritePaths, Hero heroForIcon)
+ * - toasts secuenciales (no modales)
+ * - música de combate configurable vía setBattleMusicPath(...)
+ * - Game Over centrado que detiene la música previa
+ * - createDebugMonster adaptado a la firma solicitada
+ * - indicador de vida del héroe en esquina que se actualiza en tiempo real
+ */
 public class CombatScreen {
 
     public final StackPane root;
@@ -65,6 +74,9 @@ public class CombatScreen {
     // Música de combate
     private MediaPlayer battleMusic = null;
 
+    // Ruta configurable de la música de combate (puede cambiarse desde fuera)
+    private String battleMusicPath = "/Resources/music/fieldBattle.mp3";
+
     // Flag que indica que estamos en estado Game Over (bloquea inputs salvo Start)
     private volatile boolean gameOverActive = false;
 
@@ -74,6 +86,14 @@ public class CombatScreen {
     // Label para mostrar vida del héroe (actual / total)
     private final Label heroHpLabel = new Label();
 
+    /**
+     * Constructor principal.
+     *
+     * @param game                instancia del juego (no nula según tu implementación)
+     * @param bgPath              ruta del fondo (ej: "/Resources/textures/battle_bg.png")
+     * @param monsterSpritePaths  lista de rutas de sprites para elegir aleatoriamente
+     * @param heroForIcon         héroe para usar su imagen en el icono (puede ser null)
+     */
     public CombatScreen(Game game, String bgPath, List<String> monsterSpritePaths, Hero heroForIcon) {
         this.game = game;
 
@@ -184,15 +204,25 @@ public class CombatScreen {
         Platform.runLater(() -> root.requestFocus());
     }
 
+    /**
+     * Setter público para que otras clases (por ejemplo GameMapScreen) puedan
+     * cambiar la ruta de la música de combate antes de mostrar la pantalla.
+     *
+     * @param path ruta a usar (puede ser absoluta o recurso en classpath)
+     */
+    public void setBattleMusicPath(String path) {
+        if (path != null && !path.isBlank()) {
+            this.battleMusicPath = path;
+        }
+    }
+
     private void setupHeroHpLabel() {
         heroHpLabel.setStyle("-fx-background-color: rgba(0,0,0,0.6); -fx-text-fill: white; -fx-padding: 6 10 6 10; -fx-background-radius: 6;");
         heroHpLabel.setFont(Font.font(13));
         heroHpLabel.setMouseTransparent(true);
-        // Posicionar en la esquina superior derecha
         StackPane.setAlignment(heroHpLabel, Pos.TOP_RIGHT);
-        heroHpLabel.setTranslateX(-12); // margen desde el borde derecho
-        heroHpLabel.setTranslateY(12);  // margen desde el borde superior
-        // Añadir al root para que quede encima de todo
+        heroHpLabel.setTranslateX(-12);
+        heroHpLabel.setTranslateY(12);
         root.getChildren().add(heroHpLabel);
     }
 
@@ -224,8 +254,7 @@ public class CombatScreen {
     }
 
     /**
-     * Método solicitado: constructor de Monster con la firma que pediste. Evita
-     * returns/breaks/continues en la búsqueda del arma.
+     * Método solicitado: constructor de Monster con la firma que pediste.
      */
     private Monster createDebugMonster(String spritePath, String name) {
         Weapon w = null;
@@ -249,6 +278,7 @@ public class CombatScreen {
         int life = 12;
         int actualLife = 12;
 
+        // Constructor que pediste (sin Classes)
         Monster m = new Monster(w, attack, magic, defense, velocidad, level, name, spritePath, life, actualLife);
 
         return m;
@@ -388,9 +418,7 @@ public class CombatScreen {
             if (code == KeyCode.ENTER || code == KeyCode.SPACE) {
                 ev.consume();
                 Button sel = buttons.get(selectedButtonIndex);
-                if (sel != null) {
-                    sel.fire();
-                }
+                if (sel != null) sel.fire();
                 return;
             }
 
@@ -401,23 +429,17 @@ public class CombatScreen {
             }
             if (code == KeyCode.DIGIT2 || code == KeyCode.NUMPAD2) {
                 ev.consume();
-                if (buttons.size() > 1) {
-                    buttons.get(1).fire();
-                }
+                if (buttons.size() > 1) buttons.get(1).fire();
                 return;
             }
             if (code == KeyCode.DIGIT3 || code == KeyCode.NUMPAD3) {
                 ev.consume();
-                if (buttons.size() > 2) {
-                    buttons.get(2).fire();
-                }
+                if (buttons.size() > 2) buttons.get(2).fire();
                 return;
             }
             if (code == KeyCode.DIGIT4 || code == KeyCode.NUMPAD4) {
                 ev.consume();
-                if (buttons.size() > 3) {
-                    buttons.get(3).fire();
-                }
+                if (buttons.size() > 3) buttons.get(3).fire();
                 return;
             }
 
@@ -472,6 +494,7 @@ public class CombatScreen {
                     ? ("Has atacado a " + finalTarget.getName() + ". Vida restante del monstruo: " + finalTarget.getActualLife())
                     : "Tu ataque no hizo daño.";
             toastQueue.enqueue(heroMsg);
+            updateHeroHpDisplay(); // por si alguna acción del héroe afecta visualmente
         }
 
         boolean removedOne = false;
@@ -543,9 +566,7 @@ public class CombatScreen {
                 FXGL.getGameScene().removeUINode(root);
             } catch (Throwable ignored) {
             }
-            if (onExit != null) {
-                onExit.run();
-            }
+            if (onExit != null) onExit.run();
         });
     }
 
@@ -641,17 +662,27 @@ public class CombatScreen {
         }
     }
 
-    // --- Música de combate (fieldBattle.mp3) ---
+    // --- Música de combate (usa battleMusicPath configurable) ---
     private void playBattleMusic() {
         try {
             stopBattleMusic();
-            URL res = getClass().getResource("/Resources/music/fieldBattle.mp3");
+            URL res = getClass().getResource(battleMusicPath);
             if (res != null) {
                 Media media = new Media(res.toExternalForm());
                 battleMusic = new MediaPlayer(media);
                 battleMusic.setCycleCount(MediaPlayer.INDEFINITE);
                 battleMusic.setVolume(MainScreen.getVolumeSetting());
                 battleMusic.play();
+            } else {
+                // Si no es recurso en classpath, intentar como URL/archivo directo
+                try {
+                    Media media = new Media(battleMusicPath);
+                    battleMusic = new MediaPlayer(media);
+                    battleMusic.setCycleCount(MediaPlayer.INDEFINITE);
+                    battleMusic.setVolume(MainScreen.getVolumeSetting());
+                    battleMusic.play();
+                } catch (Throwable ignored) {
+                }
             }
         } catch (Throwable ignored) {
         }
@@ -684,7 +715,6 @@ public class CombatScreen {
 
     // --- ToastQueue: muestra labels temporales en orden, uno a la vez ---
     private class ToastQueue {
-
         private final Queue<String> q = new ArrayDeque<>();
         private boolean showing = false;
         private final double DURATION_SECONDS = 1.2;
@@ -721,8 +751,7 @@ public class CombatScreen {
                 if (root != null) {
                     root.getChildren().add(container);
                 }
-            } catch (Throwable ignored) {
-            }
+            } catch (Throwable ignored) {}
 
             FadeTransition fadeIn = new FadeTransition(javafx.util.Duration.seconds(FADE_SECONDS), lbl);
             fadeIn.setFromValue(0.0);
@@ -735,10 +764,7 @@ public class CombatScreen {
             fadeOut.setToValue(0.0);
 
             fadeOut.setOnFinished(ev -> {
-                try {
-                    root.getChildren().remove(container);
-                } catch (Throwable ignored) {
-                }
+                try { root.getChildren().remove(container); } catch (Throwable ignored) {}
                 Platform.runLater(this::showNext);
             });
 
