@@ -495,35 +495,76 @@ public class InventoryScreen {
                 + "-fx-background-radius: 8; -fx-effect: dropshadow(gaussian, #333, 5, 0, 0, 2); "
                 + "-fx-cursor: hand;");
         saveButton.setOnAction(e -> {
-            // Igual que el ESC: guardar la posición actual del héroe si hay mapScreen activo
             try {
+                // 1) Obtener la posición del héroe desde el proveedor (GameMapScreen / FieldVillage)
                 Point2D pos = tryGetHeroTopLeftFromProvider();
+
                 if (pos != null) {
                     Hero h = game.getHero();
                     if (h != null) {
-                        // Intentamos inferir la ubicación tipo: si mapScreen es FieldVillage we set FIELD_VILLAGE,
-                        // si mapScreen is GameMapScreen we set MAP. Si no sabemos, dejamos MAP.
+                        // Inferir tipo de ubicación según la clase del proveedor (village vs map)
                         try {
-                            String clsName = mapScreen != null ? mapScreen.getClass().getSimpleName() : "";
-                            if (clsName != null && clsName.toLowerCase().contains("village")) {
+                            String clsName = mapScreen != null ? mapScreen.getClass().getSimpleName().toLowerCase() : "";
+                            if (clsName.contains("village")) {
                                 h.setLastLocation(Hero.Location.FIELD_VILLAGE);
                             } else {
                                 h.setLastLocation(Hero.Location.MAP);
                             }
                         } catch (Throwable ignored) {
                         }
+
                         h.setLastPosX(pos.getX());
                         h.setLastPosY(pos.getY());
                     }
+                } else {
+                    // Fallback: si no hay proveedor, intentar replicar comportamiento ESC guardando la posición actual del Game/Hero
+                    try {
+                        Hero h = game.getHero();
+                        if (h != null) {
+                            // No cambiamos location si no sabemos el origen; dejamos la posición actual del héroe
+                            // (si tu Game expone la posición del héroe global, aquí puedes asignarla)
+                        }
+                    } catch (Throwable ignored) {
+                    }
                 }
-            } catch (Throwable ignored) {
-            }
 
-            boolean saved = game.createSaveGame();
-            if (saved) {
-                showToast("Game saved successfully!", 1500);
-            } else {
-                showToast("Error saving game.", 1500);
+                // 2) Guardar la partida
+                boolean saved = game.createSaveGame();
+
+                // 3) Mensaje al usuario
+                if (saved) {
+                    showToast("Game saved successfully!", 1200);
+                } else {
+                    showToast("Error saving game.", 1200);
+                }
+
+                // 4) Cerrar el inventario para que el onClose registrado por la pantalla que lo abrió
+                //    reanude mover/foco/música exactamente como cuando se presiona ESC.
+                PauseTransition pt = new PauseTransition(Duration.millis(350)); // pequeño delay para ver el toast
+                pt.setOnFinished(ev -> {
+                    try {
+                        close(); // close() quita filtros, reanuda audio y ejecuta onClose si existe
+                    } catch (Throwable ex) {
+                        // fallback robusto: intentar remover UI y llamar onClose manualmente
+                        try {
+                            FXGL.getGameScene().removeUINode(root);
+                        } catch (Throwable ignored) {
+                        }
+                        if (onClose != null) {
+                            try {
+                                onClose.run();
+                            } catch (Throwable ignored) {
+                            }
+                        }
+                    }
+                });
+                pt.play();
+
+            } catch (Throwable ex) {
+                try {
+                    showToast("Error saving game.", 1200);
+                } catch (Throwable ignored) {
+                }
             }
         });
 

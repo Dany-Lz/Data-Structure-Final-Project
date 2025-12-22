@@ -35,12 +35,13 @@ import java.util.Queue;
 import java.util.Random;
 
 /**
- * CombatScreen completo con: - constructor: CombatScreen(Game game, String
- * bgPath, List<String> monsterSpritePaths, Hero heroForIcon) - toasts
- * secuenciales (no modales) - música de combate configurable vía
- * setBattleMusicPath(...) - Game Over centrado que detiene la música previa -
- * createDebugMonster adaptado a la firma solicitada - indicador de vida del
- * héroe en esquina que se actualiza en tiempo real
+ * CombatScreen completo con:
+ * - constructor: CombatScreen(Game game, String bgPath, List<String> monsterSpritePaths, Hero heroForIcon)
+ * - toasts secuenciales (no modales)
+ * - música de combate configurable vía setBattleMusicPath(...)
+ * - Game Over centrado que detiene la música previa
+ * - createDebugMonster adaptado a la firma solicitada
+ * - indicador de vida del héroe en esquina que se actualiza en tiempo real
  */
 public class CombatScreen {
 
@@ -90,8 +91,7 @@ public class CombatScreen {
      *
      * @param game instancia del juego (no nula según tu implementación)
      * @param bgPath ruta del fondo (ej: "/Resources/textures/battle_bg.png")
-     * @param monsterSpritePaths lista de rutas de sprites para elegir
-     * aleatoriamente
+     * @param monsterSpritePaths lista de rutas de sprites para elegir aleatoriamente
      * @param heroForIcon héroe para usar su imagen en el icono (puede ser null)
      */
     public CombatScreen(Game game, String bgPath, List<String> monsterSpritePaths, Hero heroForIcon) {

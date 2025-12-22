@@ -864,15 +864,41 @@ public class GameMapScreen {
     }
 
     private void openDebugCombat() {
-        // Implementación de debug combat que tenías antes; aquí se abre CombatScreen de prueba
-        CombatScreen cs = new CombatScreen(game, "/Resources/textures/battle_bg.png",
-                List.of("/Resources/sprites/Monsters/monster1.png"), game.getHero());
+        String bg = "/Resources/textures/Battle/fieldBattle.png";
+        List<String> sprites = List.of(
+                "/Resources/sprites/monster1.png",
+                "/Resources/sprites/monster2.png",
+                "/Resources/sprites/monster3.png"
+        );
+
+        stopMapMusic();
+
+        GUI.CombatScreen cs = new GUI.CombatScreen(game, bg, sprites, game.getHero());
+        // Pasar la ruta de música de combate configurada (si se cambió desde fuera)
+        cs.setBattleMusicPath(combatMusicPath);
+        //cs.setBattleMusicPath("/Resources/music/bossBattle2.mp3");
+
         cs.setOnExit(() -> {
-            // callback al cerrar combate
             Platform.runLater(() -> {
-                // nada especial por defecto
+                try {
+                    FXGL.getGameScene().removeUINode(cs.root);
+                } catch (Throwable ignored) {
+                }
+                try {
+                    FXGL.getGameScene().addUINode(root);
+                } catch (Throwable ignored) {
+                }
+                startMapMusic();
+                root.requestFocus();
             });
         });
-        cs.show();
+
+        Platform.runLater(() -> {
+            try {
+                FXGL.getGameScene().removeUINode(root);
+            } catch (Throwable ignored) {
+            }
+            cs.show();
+        });
     }
 }
