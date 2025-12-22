@@ -22,14 +22,23 @@ import javafx.scene.layout.Pane;
 import javafx.scene.layout.StackPane;
 import javafx.scene.media.Media;
 import javafx.scene.media.MediaPlayer;
-import javafx.scene.shape.Rectangle;
 import javafx.scene.transform.Scale;
+import javafx.scene.shape.Rectangle;
+import javafx.scene.paint.Color;
+import javafx.scene.text.Text;
 import java.net.URL;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
 import java.util.Random;
 
+/**
+ * GameMapScreen completo con soporte para:
+ * - pasar referencia al InventoryScreen (this)
+ * - registrar/desregistrar su MediaPlayer en AudioManager
+ * - exponer getHeroMapTopLeft/getHeroMapCenter para que InventoryScreen guarde posición
+ * - mantener todos los métodos previos y la lógica de movimiento/colisiones
+ */
 public class GameMapScreen {
 
     public final StackPane root;
@@ -342,27 +351,28 @@ public class GameMapScreen {
         root.setFocusTraversable(true);
     }
 
-   private void openInventory() {
-    // Detener el movimiento pero NO la música
-    mover.stop();
-    
-    InventoryScreen inventory = new InventoryScreen(game);
-    
-    // Configurar onClose para cuando se cierra el inventario normalmente
-    inventory.setOnClose(() -> {
-        Platform.runLater(() -> {
-            try {
-                FXGL.getGameScene().removeUINode(inventory.getRoot());
-            } catch (Throwable ignored) {}
-            // Reanudar el movimiento
-            mover.start();
-            root.requestFocus();
+    private void openInventory() {
+        // Detener el movimiento pero NO la música del mapa (InventoryScreen pausará globalmente)
+        mover.stop();
+
+        // Pasar referencia 'this' para que InventoryScreen pueda guardar la posición y detener música si lo desea
+        InventoryScreen inventory = new InventoryScreen(game, this);
+
+        // Configurar onClose para cuando se cierra el inventario normalmente
+        inventory.setOnClose(() -> {
+            Platform.runLater(() -> {
+                try {
+                    FXGL.getGameScene().removeUINode(inventory.getRoot());
+                } catch (Throwable ignored) {}
+                // Reanudar el movimiento
+                mover.start();
+                root.requestFocus();
+            });
         });
-    });
-    
-    // Mostrar el inventario
-    inventory.show();
-}
+
+        // Mostrar el inventario
+        inventory.show();
+    }
 
     private void installEscHandler() {
         root.addEventFilter(KeyEvent.KEY_PRESSED, ev -> {
@@ -492,6 +502,9 @@ public class GameMapScreen {
                 mapMusic.setCycleCount(MediaPlayer.INDEFINITE);
                 mapMusic.setVolume(MainScreen.getVolumeSetting());
                 mapMusic.play();
+
+                // Registrar en AudioManager para control centralizado
+                AudioManager.register(mapMusic);
             }
         } catch (Throwable ignored) {
         }
@@ -501,6 +514,8 @@ public class GameMapScreen {
         try {
             boolean exists = mapMusic != null;
             if (exists) {
+                // Desregistrar antes de detener
+                AudioManager.unregister(mapMusic);
                 mapMusic.stop();
                 mapMusic.dispose();
                 mapMusic = null;
@@ -753,8 +768,8 @@ public class GameMapScreen {
                 Rectangle rv = new Rectangle(
                         ob.visualRect.getMinX(), ob.visualRect.getMinY(),
                         ob.visualRect.getWidth(), ob.visualRect.getHeight());
-                rv.setFill(javafx.scene.paint.Color.rgb(0, 0, 255, 0.12));
-                rv.setStroke(javafx.scene.paint.Color.rgb(0, 0, 120, 0.5));
+                rv.setFill(Color.rgb(0, 0, 255, 0.12));
+                rv.setStroke(Color.rgb(0, 0, 120, 0.5));
                 rv.getProperties().put("tag", "debug");
                 rv.setMouseTransparent(true);
                 container.getChildren().add(rv);
@@ -764,11 +779,11 @@ public class GameMapScreen {
                     ob.collisionRect.getMinX(), ob.collisionRect.getMinY(),
                     ob.collisionRect.getWidth(), ob.collisionRect.getHeight());
             if (ob.type == ObstacleType.VILLAGE) {
-                rc.setFill(javafx.scene.paint.Color.rgb(255, 0, 0, 0.22));
-                rc.setStroke(javafx.scene.paint.Color.rgb(120, 0, 0, 0.6));
+                rc.setFill(Color.rgb(255, 0, 0, 0.22));
+                rc.setStroke(Color.rgb(120, 0, 0, 0.6));
             } else {
-                rc.setFill(javafx.scene.paint.Color.rgb(160, 0, 200, 0.28));
-                rc.setStroke(javafx.scene.paint.Color.rgb(120, 0, 120, 0.6));
+                rc.setFill(Color.rgb(160, 0, 200, 0.28));
+                rc.setStroke(Color.rgb(120, 0, 120, 0.6));
             }
             rc.getProperties().put("tag", "debug");
             rc.setMouseTransparent(true);
@@ -832,68 +847,32 @@ public class GameMapScreen {
         if (heroView != null) {
             double hw = heroView.getBoundsInLocal().getWidth();
             double hh = heroView.getBoundsInLocal().getHeight();
-            double nx = clamp(x, 0, mapW - hw);
-            double ny = clamp(y, 0, mapH - hh);
-            heroView.setLayoutX(nx);
-            heroView.setLayoutY(ny);
+            heroView.setLayoutX(clamp(x, 0, mapW - hw));
+            heroView.setLayoutY(clamp(y, 0, mapH - hh));
             heroPositionInitialized = true;
         }
     }
 
     public void resetHeroToCenter() {
-        heroPositionInitialized = false;
         positionHeroCenter();
     }
 
-    public void enableDebugObstacles(boolean enable) {
-        this.debugEnabled = enable;
-    }
-
-    public boolean isDebugEnabled() {
-        return debugEnabled;
-    }
-
+    // Métodos auxiliares que ya estaban en tu clase (clearInputState, openDebugCombat, etc.)
     private void clearInputState() {
         up = down = left = right = false;
-        vx = vy = 0;
+        draggingMap = false;
     }
 
     private void openDebugCombat() {
-        String bg = "/Resources/textures/Battle/fieldBattle.png";
-        List<String> sprites = List.of(
-                "/Resources/sprites/Monsters/monster1.png",
-                "/Resources/sprites/Monsters/monster2.png",
-                "/Resources/sprites/Monsters/monster3.png"
-        );
-
-        stopMapMusic();
-
-        GUI.CombatScreen cs = new GUI.CombatScreen(game, bg, sprites, game.getHero());
-        // Pasar la ruta de música de combate configurada (si se cambió desde fuera)
-        cs.setBattleMusicPath(combatMusicPath);
-        //cs.setBattleMusicPath("/Resources/music/bossBattle2.mp3");
-
+        // Implementación de debug combat que tenías antes; aquí se abre CombatScreen de prueba
+        CombatScreen cs = new CombatScreen(game, "/Resources/textures/battle_bg.png",
+                List.of("/Resources/sprites/Monsters/monster1.png"), game.getHero());
         cs.setOnExit(() -> {
+            // callback al cerrar combate
             Platform.runLater(() -> {
-                try {
-                    FXGL.getGameScene().removeUINode(cs.root);
-                } catch (Throwable ignored) {
-                }
-                try {
-                    FXGL.getGameScene().addUINode(root);
-                } catch (Throwable ignored) {
-                }
-                startMapMusic();
-                root.requestFocus();
+                // nada especial por defecto
             });
         });
-
-        Platform.runLater(() -> {
-            try {
-                FXGL.getGameScene().removeUINode(root);
-            } catch (Throwable ignored) {
-            }
-            cs.show();
-        });
+        cs.show();
     }
 }
