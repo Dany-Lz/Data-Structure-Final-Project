@@ -3,7 +3,7 @@ package Misc;
 public abstract class Classes {
     protected String description;
     protected boolean unlocked;
-    protected boolean actived;
+    protected boolean activeted;
     
     public Classes(String description, boolean unlocked, boolean actived){
         setDescription(description);
@@ -28,11 +28,11 @@ public abstract class Classes {
     }
 
     public boolean isActived() {
-        return actived;
+        return activeted;
     }
 
     public void setActived(boolean actived) {
-        this.actived = actived;
+        this.activeted = actived;
     }
     
     

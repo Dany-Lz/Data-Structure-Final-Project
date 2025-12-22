@@ -58,6 +58,9 @@ public class GameMapScreen {
     // Ruta configurable para la música de combate
     private String combatMusicPath = "/Resources/music/fieldBattle.mp3";
 
+    // Inventario
+    private InventoryScreen inventory;
+
     public enum Direction {
         NONE, N, NE, E, SE, S, SW, W, NW
     }
@@ -93,7 +96,7 @@ public class GameMapScreen {
     private boolean heroPositionInitialized = false;
 
     // Flag para mostrar/ocultar rectángulos de colisión (debug)
-    private boolean debugEnabled = true;
+    private boolean debugEnabled = false;
 
     // Random para usos de debug (por ejemplo abrir combate con número aleatorio de monstruos)
     private final Random rnd = new Random();
@@ -301,6 +304,10 @@ public class GameMapScreen {
                 handled = true;
                 clearInputState();
                 openDebugCombat();
+            } else if (k == KeyCode.I || k == KeyCode.ADD || k == KeyCode.PLUS) {
+                handled = true;
+                clearInputState();
+                openInventory();
             } else if (k == KeyCode.W || k == KeyCode.UP) {
                 up = true;
             } else if (k == KeyCode.S || k == KeyCode.DOWN) {
@@ -334,6 +341,28 @@ public class GameMapScreen {
 
         root.setFocusTraversable(true);
     }
+
+   private void openInventory() {
+    // Detener el movimiento pero NO la música
+    mover.stop();
+    
+    InventoryScreen inventory = new InventoryScreen(game);
+    
+    // Configurar onClose para cuando se cierra el inventario normalmente
+    inventory.setOnClose(() -> {
+        Platform.runLater(() -> {
+            try {
+                FXGL.getGameScene().removeUINode(inventory.getRoot());
+            } catch (Throwable ignored) {}
+            // Reanudar el movimiento
+            mover.start();
+            root.requestFocus();
+        });
+    });
+    
+    // Mostrar el inventario
+    inventory.show();
+}
 
     private void installEscHandler() {
         root.addEventFilter(KeyEvent.KEY_PRESSED, ev -> {

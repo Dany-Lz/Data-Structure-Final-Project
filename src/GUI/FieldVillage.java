@@ -8,6 +8,8 @@ import javafx.animation.FadeTransition;
 import javafx.animation.PauseTransition;
 import javafx.animation.AnimationTimer;
 import javafx.application.Platform;
+import javafx.geometry.Point2D;
+import javafx.geometry.Rectangle2D;
 import javafx.geometry.Pos;
 import javafx.scene.control.Alert;
 import javafx.scene.control.ButtonType;
@@ -25,7 +27,9 @@ import javafx.scene.text.Text;
 import javafx.util.Duration;
 
 import java.net.URL;
+import java.util.ArrayList;
 import java.util.HashSet;
+import java.util.List;
 import java.util.Optional;
 import java.util.Set;
 
@@ -55,6 +59,38 @@ public class FieldVillage {
     private Runnable onExitCallback;
     private final Game game;
 
+    // Sistema de colisiones similar a GameMapScreen
+    private final List<Obstacle> obstacles = new ArrayList<>();
+    private boolean debugEnabled = false;
+
+    // Inventario
+    private InventoryScreen inventory;
+
+    // Direcciones del héroe (para depuración con tecla P)
+    public enum Direction {
+        NONE, N, NE, E, SE, S, SW, W, NW
+    }
+    private Direction currentDirection = Direction.NONE;
+
+    // Tipos de obstáculos para la aldea
+    private enum ObstacleType {
+        HOUSE, TREE, WELL, FENCE, BUSH, EXIT, BLOCK
+    }
+
+    // Clase interna para obstáculos
+    private static class Obstacle {
+
+        final Rectangle2D collisionRect;
+        final ObstacleType type;
+        final String id;
+
+        Obstacle(Rectangle2D collision, ObstacleType type, String id) {
+            this.collisionRect = collision;
+            this.type = type;
+            this.id = id;
+        }
+    }
+
     public FieldVillage(Game game) {
         this.game = game;
         root = new StackPane();
@@ -72,9 +108,10 @@ public class FieldVillage {
         installInputHandlers();
         createMover();
 
-        // Limpia inputs al perder foco
         root.focusedProperty().addListener((obs, wasFocused, isFocused) -> {
-            if (!isFocused) clearInputState();
+            if (!isFocused) {
+                clearInputState();
+            }
         });
     }
 
@@ -88,15 +125,26 @@ public class FieldVillage {
             boolean imageOk = loadBackgroundImage("/Resources/textures/fieldVillage/fieldVillage.png");
             boolean musicOk = startVillageMusic("/Resources/music/fieldVillage.mp3");
 
-            positionHeroAtBottomCenter();
+            // Primero poblar colisiones
+            populateVillageObstacles();
+
+            // Luego posicionar al héroe
+            positionHeroAtEntrance();
             createStartRectAtHeroStart();
+
+            // Dibujar obstáculos en modo debug
+            if (debugEnabled) {
+                drawDebugObstacles();
+            }
 
             PauseTransition wait = new PauseTransition(Duration.millis(600));
             wait.setOnFinished(e -> {
                 showLoading(false);
                 fadeInContent();
                 startMover();
-                if (onLoaded != null) onLoaded.run();
+                if (onLoaded != null) {
+                    onLoaded.run();
+                }
             });
             wait.play();
         });
@@ -106,7 +154,10 @@ public class FieldVillage {
         Platform.runLater(() -> {
             stopVillageMusic();
             stopMover();
-            try { FXGL.getGameScene().removeUINode(root); } catch (Throwable ignored) {}
+            try {
+                FXGL.getGameScene().removeUINode(root);
+            } catch (Throwable ignored) {
+            }
         });
     }
 
@@ -114,7 +165,7 @@ public class FieldVillage {
         StackPane overlay = new StackPane();
         overlay.setPickOnBounds(true);
 
-        javafx.scene.shape.Rectangle bg = new javafx.scene.shape.Rectangle(VIEW_W, VIEW_H);
+        Rectangle bg = new Rectangle(VIEW_W, VIEW_H);
         bg.setFill(Color.rgb(0, 0, 0, 0.6));
 
         Text label = new Text("Cargando aldea...");
@@ -128,8 +179,11 @@ public class FieldVillage {
 
     private void showLoading(boolean show) {
         loadingOverlay.setVisible(show);
-        if (show) loadingOverlay.toFront();
-        else loadingOverlay.toBack();
+        if (show) {
+            loadingOverlay.toFront();
+        } else {
+            loadingOverlay.toBack();
+        }
     }
 
     private void fadeInContent() {
@@ -173,7 +227,9 @@ public class FieldVillage {
     private boolean startVillageMusic(String path) {
         try {
             URL res = getClass().getResource(path);
-            if (res == null) return false;
+            if (res == null) {
+                return false;
+            }
             Media media = new Media(res.toExternalForm());
             stopVillageMusic();
             music = new MediaPlayer(media);
@@ -193,13 +249,17 @@ public class FieldVillage {
                 music.dispose();
                 music = null;
             }
-        } catch (Throwable ignored) {}
+        } catch (Throwable ignored) {
+        }
     }
 
     private ImageView createHeroView() {
         Image img = null;
-        try { img = new Image(getClass().getResourceAsStream("/Resources/sprites/hero.png")); }
-        catch (Throwable ignored) { img = null; }
+        try {
+            img = new Image(getClass().getResourceAsStream("/Resources/sprites/hero.png"));
+        } catch (Throwable ignored) {
+            img = null;
+        }
         ImageView iv = new ImageView(img);
         iv.setPreserveRatio(true);
         iv.setFitWidth(HERO_W);
@@ -208,11 +268,347 @@ public class FieldVillage {
         return iv;
     }
 
-    private void positionHeroAtBottomCenter() {
+    // Poblar obstáculos de la aldea (AJUSTA ESTAS COORDENADAS A TU MAPA)
+    private void populateVillageObstacles() {
+        obstacles.clear();
+
+        double heroTopLeftX = 97.71;
+        double heroTopLeftY = 533.44;
+        obstacles.add(new Obstacle(
+                new Rectangle2D(heroTopLeftX, heroTopLeftY, 48, 48), // Tamaño del héroe
+                ObstacleType.BLOCK,
+                "bloque1"
+        ));
+
+        obstacles.add(new Obstacle(
+                new Rectangle2D(238.97, 529.88, 48, 48),
+                ObstacleType.BLOCK,
+                "bloque2"
+        ));
+
+        obstacles.add(new Obstacle(
+                new Rectangle2D(0, 500, 60, 370), // x, y, ancho, alto
+                ObstacleType.BUSH,
+                "arbustoIzquierdoLargo"
+        ));
+
+        obstacles.add(new Obstacle(
+                new Rectangle2D(1414.08, 0, 60, 900), // x, y, ancho, alto
+                ObstacleType.BUSH,
+                "arbustoDerechoLargo"
+        ));
+
+        obstacles.add(new Obstacle(
+                new Rectangle2D(1350, 90, 60, 180), // x, y, ancho, alto
+                ObstacleType.BUSH,
+                "lineaBarriles"
+        ));
+
+        obstacles.add(new Obstacle(
+                new Rectangle2D(1215, 300, 15, 15), // x, y, ancho, alto
+                ObstacleType.BUSH,
+                "barrilSolitario"
+        ));
+
+        obstacles.add(new Obstacle(
+                new Rectangle2D(1170, 780, 160, 55), // x, y, ancho, alto
+                ObstacleType.BUSH,
+                "puesto"
+        ));
+
+        obstacles.add(new Obstacle(
+                new Rectangle2D(1265, 0, 160, 55), // x, y, ancho, alto
+                ObstacleType.BUSH,
+                "arbustoSuperiorDerecho"
+        ));
+
+        obstacles.add(new Obstacle(
+                new Rectangle2D(60, 290, 260, 220), // x, y, ancho, alto
+                ObstacleType.BUSH,
+                "taberna1"
+        ));
+
+        obstacles.add(new Obstacle(
+                new Rectangle2D(1070, 55, 250, 200), // x, y, ancho, alto
+                ObstacleType.BUSH,
+                "taberna2"
+        ));
+
+        obstacles.add(new Obstacle(
+                new Rectangle2D(1170, 390, 200, 200), // x, y, ancho, alto
+                ObstacleType.BUSH,
+                "taberna3"
+        ));
+
+        double faroX = 290.0;
+        double faroY = 585.0;
+        double faroWidth = 35;
+        double faroHeight = 95;
+
+        obstacles.add(new Obstacle(
+                new Rectangle2D(faroX, faroY, faroWidth, faroHeight),
+                ObstacleType.BLOCK,
+                "faro_izquierdo"
+        ));
+
+        double faro1X = 385.0;
+        double faro1Y = 678.0;
+        double faro1Width = 35;
+        double faro1Height = 95;
+
+        obstacles.add(new Obstacle(
+                new Rectangle2D(faro1X, faro1Y, faro1Width, faro1Height),
+                ObstacleType.BLOCK,
+                "faro_central"
+        ));
+
+        double faro2X = 483.0;
+        double faro2Y = 778.0;
+        double faro2Width = 35;
+        double faro2Height = 95;
+
+        obstacles.add(new Obstacle(
+                new Rectangle2D(faro2X, faro2Y, faro2Width, faro2Height),
+                ObstacleType.BLOCK,
+                "faro_derechoInferior"
+        ));
+
+        double faro3X = 483.0;
+        double faro3Y = 349.0;
+        double faro3Width = 35;
+        double faro3Height = 95;
+
+        obstacles.add(new Obstacle(
+                new Rectangle2D(faro3X, faro3Y, faro3Width, faro3Height),
+                ObstacleType.BLOCK,
+                "faro_derechoInferior"
+        ));
+
+        double faro4X = 920.0;
+        double faro4Y = 349.0;
+        double faro4Width = 35;
+        double faro4Height = 95;
+
+        obstacles.add(new Obstacle(
+                new Rectangle2D(faro4X, faro4Y, faro4Width, faro4Height),
+                ObstacleType.BLOCK,
+                "faros de la derecha"
+        ));
+
+        double faro5X = 870.0;
+        double faro5Y = 780.0;
+        double faro5Width = 35;
+        double faro5Height = 95;
+
+        obstacles.add(new Obstacle(
+                new Rectangle2D(faro5X, faro5Y, faro5Width, faro5Height),
+                ObstacleType.BLOCK,
+                "faros de la derecha"
+        ));
+
+        double faro6X = 970.0;
+        double faro6Y = 680.0;
+        double faro6Width = 35;
+        double faro6Height = 95;
+
+        obstacles.add(new Obstacle(
+                new Rectangle2D(faro6X, faro6Y, faro6Width, faro6Height),
+                ObstacleType.BLOCK,
+                "faros de la derecha"
+        ));
+
+        double faro7X = 1059.86;
+        double faro7Y = 584.26;
+        double faro7Width = 35;
+        double faro7Height = 95;
+
+        obstacles.add(new Obstacle(
+                new Rectangle2D(faro7X, faro7Y, faro7Width, faro7Height),
+                ObstacleType.BLOCK,
+                "faros de la derecha"
+        ));
+
+        double arbol7X = 20.13;
+        double arbol7Y = 152.00;
+        double arbol7Width = 60;
+        double arbol7Height = 95;
+
+        obstacles.add(new Obstacle(
+                new Rectangle2D(arbol7X, arbol7Y, arbol7Width, arbol7Height),
+                ObstacleType.BLOCK,
+                "arbol izquierdo superior"
+        ));
+
+        double pX = 0;
+        double pY = 0;
+        double pWidth = 288;
+        double pHeight = 140;
+
+        obstacles.add(new Obstacle(
+                new Rectangle2D(pX, pY, pWidth, pHeight),
+                ObstacleType.BLOCK,
+                "piscina"
+        ));
+
+        double bX = 205;
+        double bY = 150;
+        double bWidth = 25;
+        double bHeight = 25;
+
+        obstacles.add(new Obstacle(
+                new Rectangle2D(bX, bY, bWidth, bHeight),
+                ObstacleType.BLOCK,
+                "maderaSuperior"
+        ));
+
+        double b1X = 250.00;
+        double b1Y = 150;
+        double b1Width = 25;
+        double b1Height = 35;
+
+        obstacles.add(new Obstacle(
+                new Rectangle2D(b1X, b1Y, b1Width, b1Height),
+                ObstacleType.BLOCK,
+                "troncoSuperior"
+        ));
+
+        double e1X = 430.00;
+        double e1Y = 50;
+        double e1Width = 90;
+        double e1Height = 70;
+
+        obstacles.add(new Obstacle(
+                new Rectangle2D(e1X, e1Y, e1Width, e1Height),
+                ObstacleType.BLOCK,
+                "estatua1"
+        ));
+
+        double e2X = 915.00;
+        double e2Y = 50;
+        double e2Width = 90;
+        double e2Height = 70;
+
+        obstacles.add(new Obstacle(
+                new Rectangle2D(e2X, e2Y, e2Width, e2Height),
+                ObstacleType.BLOCK,
+                "estatua2"
+        ));
+
+        double mX = 580.00;
+        double mY = 0;
+        double mWidth = 280;
+        double mHeight = 70;
+
+        obstacles.add(new Obstacle(
+                new Rectangle2D(mX, mY, mWidth, mHeight),
+                ObstacleType.BLOCK,
+                "museo"
+        ));
+
+        double m1X = 530.00;
+        double m1Y = 0;
+        double m1Width = 40;
+        double m1Height = 40;
+
+        obstacles.add(new Obstacle(
+                new Rectangle2D(m1X, m1Y, m1Width, m1Height),
+                ObstacleType.BLOCK,
+                "maceta1"
+        ));
+
+        double m2X = 870.00;
+        double m2Y = 0;
+        double m2Width = 40;
+        double m2Height = 40;
+
+        obstacles.add(new Obstacle(
+                new Rectangle2D(m2X, m2Y, m2Width, m2Height),
+                ObstacleType.BLOCK,
+                "maceta2"
+        ));
+
+        double sX = 580;
+        double sY = 285;
+        double sWidth = 40;
+        double sHeight = 25;
+
+        obstacles.add(new Obstacle(
+                new Rectangle2D(sX, sY, sWidth, sHeight),
+                ObstacleType.BLOCK,
+                "sennal"
+        ));
+        // Punto de salida (el rectángulo de inicio)
+        // Esto se manejará aparte con startRect
+    }
+
+    private void drawDebugObstacles() {
+        world.getChildren().removeIf(n -> "debug_obstacle".equals(n.getProperties().get("tag")));
+
+        if (!debugEnabled) {
+            return;
+        }
+
+        for (Obstacle ob : obstacles) {
+            Rectangle rect = new Rectangle(
+                    ob.collisionRect.getMinX(),
+                    ob.collisionRect.getMinY(),
+                    ob.collisionRect.getWidth(),
+                    ob.collisionRect.getHeight()
+            );
+
+            // Diferentes colores según el tipo
+            switch (ob.type) {
+                case HOUSE:
+                    rect.setFill(Color.rgb(139, 69, 19, 0.4)); // Marrón
+                    rect.setStroke(Color.rgb(101, 50, 14, 0.8));
+                    break;
+                case TREE:
+                    rect.setFill(Color.rgb(34, 139, 34, 0.4)); // Verde
+                    rect.setStroke(Color.rgb(0, 100, 0, 0.8));
+                    break;
+                case WELL:
+                    rect.setFill(Color.rgb(105, 105, 105, 0.4)); // Gris
+                    rect.setStroke(Color.rgb(64, 64, 64, 0.8));
+                    break;
+                case FENCE:
+                    rect.setFill(Color.rgb(160, 82, 45, 0.4)); // Madera
+                    rect.setStroke(Color.rgb(101, 50, 14, 0.8));
+                    break;
+                case BUSH:
+                    rect.setFill(Color.rgb(0, 128, 0, 0.4)); // Verde oscuro
+                    rect.setStroke(Color.rgb(0, 64, 0, 0.8));
+                    break;
+                default:
+                    rect.setFill(Color.rgb(255, 0, 0, 0.3));
+                    rect.setStroke(Color.RED);
+            }
+
+            rect.getProperties().put("tag", "debug_obstacle");
+            rect.setMouseTransparent(true);
+            world.getChildren().add(rect);
+        }
+    }
+
+    private void positionHeroAtEntrance() {
+        // Posicionar al héroe en la entrada de la aldea (ajusta según tu mapa)
+        // Por defecto, abajo en el centro
         double startX = (worldW - HERO_W) / 2.0;
         double startY = worldH - HERO_H - 8.0;
+
+        // Verificar que no esté en una colisión al inicio
         startX = clamp(startX, 0, Math.max(0, worldW - HERO_W));
         startY = clamp(startY, 0, Math.max(0, worldH - HERO_H));
+
+        // Ajustar si está dentro de un obstáculo
+        Rectangle2D heroRect = new Rectangle2D(startX, startY, HERO_W, HERO_H);
+        for (Obstacle ob : obstacles) {
+            if (heroRect.intersects(ob.collisionRect)) {
+                // Mover hacia arriba si hay colisión
+                startY = ob.collisionRect.getMinY() - HERO_H - 5;
+                break;
+            }
+        }
+
         heroView.setLayoutX(startX);
         heroView.setLayoutY(startY);
         updateCamera();
@@ -232,6 +628,7 @@ public class FieldVillage {
         startRect.setFill(Color.rgb(0, 120, 255, 0.28));
         startRect.setStroke(Color.rgb(0, 80, 200, 0.9));
         startRect.setMouseTransparent(true);
+        startRect.getProperties().put("tag", "exit_area");
 
         if (!world.getChildren().contains(startRect)) {
             world.getChildren().add(startRect);
@@ -243,14 +640,44 @@ public class FieldVillage {
     private void installInputHandlers() {
         root.addEventFilter(KeyEvent.KEY_PRESSED, ev -> {
             KeyCode k = ev.getCode();
-            if (k == KeyCode.W || k == KeyCode.UP) keys.add(KeyCode.W);
-            if (k == KeyCode.S || k == KeyCode.DOWN) keys.add(KeyCode.S);
-            if (k == KeyCode.A || k == KeyCode.LEFT) keys.add(KeyCode.A);
-            if (k == KeyCode.D || k == KeyCode.RIGHT) keys.add(KeyCode.D);
+
+            // Movimiento
+            if (k == KeyCode.W || k == KeyCode.UP) {
+                keys.add(KeyCode.W);
+            }
+            if (k == KeyCode.S || k == KeyCode.DOWN) {
+                keys.add(KeyCode.S);
+            }
+            if (k == KeyCode.A || k == KeyCode.LEFT) {
+                keys.add(KeyCode.A);
+            }
+            if (k == KeyCode.D || k == KeyCode.RIGHT) {
+                keys.add(KeyCode.D);
+            }
+
+            // Tecla P para depuración (coordenadas)
+            if (k == KeyCode.P) {
+                System.out.println("Hero position (aldea): (" + heroView.getLayoutX() + ", " + heroView.getLayoutY() + ")");
+                System.out.println("Hero world center (aldea): ("
+                        + (heroView.getLayoutX() + HERO_W / 2) + ", "
+                        + (heroView.getLayoutY() + HERO_H / 2) + ")");
+                System.out.println("Hero direction: " + getHeroDirection().name());
+            }
+
+            // Tecla B para depuración (combate)
+            if (k == KeyCode.B) {
+                clearInputState();
+                openDebugCombat();
+            }
+
+            // Tecla I, + o ADD para inventario
+            if (k == KeyCode.I || k == KeyCode.ADD || k == KeyCode.PLUS) {
+                clearInputState();
+                openInventory();
+            }
 
             if (k == KeyCode.ENTER) {
                 if (onStartRect) {
-                    // limpiar inputs antes de salir
                     clearInputState();
                     try {
                         if (game != null && game.getHero() != null) {
@@ -258,9 +685,13 @@ public class FieldVillage {
                             h.setLastLocation(Hero.Location.FIELD_VILLAGE);
                             h.setLastPosX(heroView.getLayoutX());
                             h.setLastPosY(heroView.getLayoutY());
-                            try { game.createSaveGame(); } catch (Throwable ignored) {}
+                            try {
+                                game.createSaveGame();
+                            } catch (Throwable ignored) {
+                            }
                         }
-                    } catch (Throwable ignored) {}
+                    } catch (Throwable ignored) {
+                    }
                     if (onExitCallback != null) {
                         hide();
                         onExitCallback.run();
@@ -271,7 +702,6 @@ public class FieldVillage {
             }
 
             if (k == KeyCode.ESCAPE) {
-                // limpiar inputs antes del diálogo
                 clearInputState();
 
                 Alert dlg = new Alert(Alert.AlertType.CONFIRMATION);
@@ -282,7 +712,8 @@ public class FieldVillage {
                     if (root.getScene() != null && root.getScene().getWindow() != null) {
                         dlg.initOwner(root.getScene().getWindow());
                     }
-                } catch (Throwable ignored) {}
+                } catch (Throwable ignored) {
+                }
                 dlg.setOnHidden(eh -> {
                     clearInputState();
                     Platform.runLater(root::requestFocus);
@@ -295,14 +726,21 @@ public class FieldVillage {
                         if (game != null && game.getHero() != null) {
                             Hero h = game.getHero();
                             h.setLastLocation(Hero.Location.FIELD_VILLAGE);
-                            h.setLastPosX(heroView.getLayoutX());
                             h.setLastPosY(heroView.getLayoutY());
-                            try { game.createSaveGame(); } catch (Throwable ignored) {}
+                            h.setLastPosX(heroView.getLayoutX());
+                            try {
+                                game.createSaveGame();
+                            } catch (Throwable ignored) {
+                            }
                         }
-                    } catch (Throwable ignored) {}
+                    } catch (Throwable ignored) {
+                    }
 
                     stopVillageMusic();
-                    try { FXGL.getGameScene().removeUINode(root); } catch (Throwable ignored) {}
+                    try {
+                        FXGL.getGameScene().removeUINode(root);
+                    } catch (Throwable ignored) {
+                    }
                     MainScreen.restoreMenuAndMusic();
                 } else {
                     clearInputState();
@@ -315,30 +753,66 @@ public class FieldVillage {
 
         root.addEventFilter(KeyEvent.KEY_RELEASED, ev -> {
             KeyCode k = ev.getCode();
-            if (k == KeyCode.W || k == KeyCode.UP) keys.remove(KeyCode.W);
-            if (k == KeyCode.S || k == KeyCode.DOWN) keys.remove(KeyCode.S);
-            if (k == KeyCode.A || k == KeyCode.LEFT) keys.remove(KeyCode.A);
-            if (k == KeyCode.D || k == KeyCode.RIGHT) keys.remove(KeyCode.D);
+            if (k == KeyCode.W || k == KeyCode.UP) {
+                keys.remove(KeyCode.W);
+            }
+            if (k == KeyCode.S || k == KeyCode.DOWN) {
+                keys.remove(KeyCode.S);
+            }
+            if (k == KeyCode.A || k == KeyCode.LEFT) {
+                keys.remove(KeyCode.A);
+            }
+            if (k == KeyCode.D || k == KeyCode.RIGHT) {
+                keys.remove(KeyCode.D);
+            }
             ev.consume();
         });
 
         root.setFocusTraversable(true);
         root.sceneProperty().addListener((obs, oldScene, newScene) -> {
-            if (newScene != null) Platform.runLater(root::requestFocus);
-            else clearInputState();
+            if (newScene != null) {
+                Platform.runLater(root::requestFocus);
+            } else {
+                clearInputState();
+            }
         });
+    }
+
+    private void openInventory() {
+        // Detener el movimiento pero NO la música
+        stopMover();
+
+        InventoryScreen inventory = new InventoryScreen(game);
+
+        // Configurar onClose para cuando se cierra el inventario normalmente
+        inventory.setOnClose(() -> {
+            Platform.runLater(() -> {
+                try {
+                    FXGL.getGameScene().removeUINode(inventory.getRoot());
+                } catch (Throwable ignored) {
+                }
+                // Reanudar el movimiento
+                startMover();
+                root.requestFocus();
+            });
+        });
+
+        // Mostrar el inventario
+        inventory.show();
     }
 
     private void createMover() {
         mover = new AnimationTimer() {
             private long last = -1;
+
             @Override
             public void handle(long now) {
-                if (last < 0) last = now;
+                if (last < 0) {
+                    last = now;
+                }
                 double dt = (now - last) / 1e9;
                 last = now;
 
-                // Watchdog: si no hay foco, no mover y limpiar inputs
                 if (root.getScene() == null || !root.isFocused()) {
                     clearInputState();
                     return;
@@ -350,20 +824,36 @@ public class FieldVillage {
     }
 
     private void startMover() {
-        if (mover != null) mover.start();
+        if (mover != null) {
+            mover.start();
+        }
     }
 
     private void stopMover() {
-        if (mover != null) mover.stop();
+        if (mover != null) {
+            mover.stop();
+        }
     }
 
     private void updateAndMove(double dt) {
         double vx = 0;
         double vy = 0;
-        if (keys.contains(KeyCode.A)) vx -= HERO_SPEED;
-        if (keys.contains(KeyCode.D)) vx += HERO_SPEED;
-        if (keys.contains(KeyCode.W)) vy -= HERO_SPEED;
-        if (keys.contains(KeyCode.S)) vy += HERO_SPEED;
+        if (keys.contains(KeyCode.A)) {
+            vx -= HERO_SPEED;
+        }
+        if (keys.contains(KeyCode.D)) {
+            vx += HERO_SPEED;
+        }
+        if (keys.contains(KeyCode.W)) {
+            vy -= HERO_SPEED;
+        }
+        if (keys.contains(KeyCode.S)) {
+            vy += HERO_SPEED;
+        }
+
+        // Actualizar dirección para depuración
+        Direction newDir = (vx != 0 || vy != 0) ? directionFromVector(vx, vy) : Direction.NONE;
+        setDirectionIfChanged(newDir);
 
         if (vx == 0 && vy == 0) {
             checkStartIntersection();
@@ -380,11 +870,97 @@ public class FieldVillage {
         double proposedX = clamp(curX + dx, 0, Math.max(0, worldW - HERO_W));
         double proposedY = clamp(curY + dy, 0, Math.max(0, worldH - HERO_H));
 
-        heroView.setLayoutX(proposedX);
-        heroView.setLayoutY(proposedY);
+        // Verificar colisiones con obstáculos
+        Rectangle2D heroRect = new Rectangle2D(proposedX, proposedY, HERO_W, HERO_H);
+        boolean collision = false;
+
+        for (Obstacle ob : obstacles) {
+            if (heroRect.intersects(ob.collisionRect)) {
+                collision = true;
+                break;
+            }
+        }
+
+        // Si no hay colisión, mover
+        if (!collision) {
+            heroView.setLayoutX(proposedX);
+            heroView.setLayoutY(proposedY);
+        } else {
+            // Intentar mover solo en X o solo en Y (para deslizarse)
+            Rectangle2D heroRectX = new Rectangle2D(proposedX, curY, HERO_W, HERO_H);
+            Rectangle2D heroRectY = new Rectangle2D(curX, proposedY, HERO_W, HERO_H);
+
+            boolean canMoveX = true;
+            boolean canMoveY = true;
+
+            for (Obstacle ob : obstacles) {
+                if (heroRectX.intersects(ob.collisionRect)) {
+                    canMoveX = false;
+                }
+                if (heroRectY.intersects(ob.collisionRect)) {
+                    canMoveY = false;
+                }
+            }
+
+            if (canMoveX) {
+                heroView.setLayoutX(proposedX);
+            }
+            if (canMoveY) {
+                heroView.setLayoutY(proposedY);
+            }
+        }
 
         checkStartIntersection();
         updateCamera();
+    }
+
+    private Direction directionFromVector(double vx, double vy) {
+        if (vx == 0 && vy == 0) {
+            return Direction.NONE;
+        }
+
+        double angle = Math.toDegrees(Math.atan2(-vy, vx));
+        if (angle < 0) {
+            angle += 360.0;
+        }
+
+        if (angle >= 337.5 || angle < 22.5) {
+            return Direction.E;
+        }
+        if (angle < 67.5) {
+            return Direction.NE;
+        }
+        if (angle < 112.5) {
+            return Direction.N;
+        }
+        if (angle < 157.5) {
+            return Direction.NW;
+        }
+        if (angle < 202.5) {
+            return Direction.W;
+        }
+        if (angle < 247.5) {
+            return Direction.SW;
+        }
+        if (angle < 292.5) {
+            return Direction.S;
+        }
+        if (angle < 337.5) {
+            return Direction.SE;
+        }
+
+        return Direction.NONE;
+    }
+
+    private void setDirectionIfChanged(Direction newDir) {
+        if (newDir == null) {
+            newDir = Direction.NONE;
+        }
+        currentDirection = newDir;
+    }
+
+    public Direction getHeroDirection() {
+        return currentDirection;
     }
 
     private void checkStartIntersection() {
@@ -424,8 +1000,12 @@ public class FieldVillage {
     }
 
     private static double clamp(double v, double lo, double hi) {
-        if (v < lo) return lo;
-        if (v > hi) return hi;
+        if (v < lo) {
+            return lo;
+        }
+        if (v > hi) {
+            return hi;
+        }
         return v;
     }
 
@@ -439,5 +1019,57 @@ public class FieldVillage {
 
     private void clearInputState() {
         keys.clear();
+    }
+
+    // Método para abrir combate de depuración (similar a GameMapScreen)
+    private void openDebugCombat() {
+        String bg = "/Resources/textures/Battle/fieldBattle.png";
+        List<String> sprites = List.of(
+                "/Resources/sprites/Monsters/monster1.png",
+                "/Resources/sprites/Monsters/monster2.png",
+                "/Resources/sprites/Monsters/monster3.png"
+        );
+
+        stopVillageMusic();
+
+        CombatScreen cs = new CombatScreen(game, bg, sprites, game.getHero());
+        cs.setBattleMusicPath("/Resources/music/fieldBattle.mp3");
+
+        cs.setOnExit(() -> {
+            Platform.runLater(() -> {
+                try {
+                    FXGL.getGameScene().removeUINode(cs.root);
+                } catch (Throwable ignored) {
+                }
+                try {
+                    FXGL.getGameScene().addUINode(root);
+                } catch (Throwable ignored) {
+                }
+                startVillageMusic("/Resources/music/fieldVillage.mp3");
+                root.requestFocus();
+            });
+        });
+
+        Platform.runLater(() -> {
+            try {
+                FXGL.getGameScene().removeUINode(root);
+            } catch (Throwable ignored) {
+            }
+            cs.show();
+        });
+    }
+
+    // Métodos para depuración
+    public void enableDebugObstacles(boolean enable) {
+        this.debugEnabled = enable;
+        if (enable) {
+            drawDebugObstacles();
+        } else {
+            world.getChildren().removeIf(n -> "debug_obstacle".equals(n.getProperties().get("tag")));
+        }
+    }
+
+    public boolean isDebugEnabled() {
+        return debugEnabled;
     }
 }

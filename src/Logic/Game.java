@@ -13,7 +13,7 @@ import java.io.RandomAccessFile;
 import java.time.LocalDateTime;
 import java.util.ArrayDeque;
 import java.util.ArrayList;
-import java.util.List;
+import java.util.Iterator;
 import java.util.Queue;
 
 public class Game {
@@ -104,6 +104,90 @@ public class Game {
         this.tasks = new ArrayDeque<>();
         this.items = new ArrayList<>();
         this.classes = new GeneralTree<>();
+
+        createClassTree();
+    }
+
+    public ArrayList<Weapon> getHeroWeapons() {
+        ArrayList<Weapon> weapons = new ArrayList<>();
+        for (Item i : hero.getItems()) {
+            if (i instanceof Weapon) {
+                weapons.add((Weapon) i);
+            }
+        }
+        return weapons;
+    }
+
+    public ArrayList<Wares> getHeroWares() {
+        ArrayList<Wares> wares = new ArrayList<>();
+        for (Item i : hero.getItems()) {
+            if (i instanceof Wares) {
+                wares.add((Wares) i);
+            }
+        }
+        return wares;
+    }
+
+    public ArrayList<Armor> getHeroArmors() {
+        ArrayList<Armor> armors = new ArrayList<>();
+        for (Item i : hero.getItems()) {
+            if (i instanceof Armor) {
+                armors.add((Armor) i);
+            }
+        }
+        return armors;
+    }
+
+    public ArrayList<String> inventoryNames(ArrayList<Item> inventory) {
+        ArrayList<String> names = new ArrayList<>();
+        for (Item i : inventory) {
+            names.add(i.getName());
+        }
+        return names;
+    }
+
+    public boolean equipItem(Item i) {
+        boolean equiped = false;
+        if (i instanceof Weapon) {
+            equiped = equipWeapon((Weapon) i);
+            if (equiped) {
+                hero.getItems().addLast(hero.getActualWeapon());
+                hero.setActualWeapon((Weapon) i);
+
+            }
+
+        } else if (i instanceof Armor) {
+            equiped = equipArmor((Armor) i);
+        }
+        return equiped;
+    }
+
+    public boolean equipWeapon(Weapon w) {
+        boolean equiped = false;
+        if (w instanceof Sword) {
+            if (hero.getActualClass().getClass().getSimpleName().equalsIgnoreCase("SwordsmanClass")
+                    || hero.getActualClass().getClass().getSimpleName().equalsIgnoreCase("ClaymoreUserClass")
+                    || hero.getActualClass().getClass().getSimpleName().equalsIgnoreCase("SaberUserClass")) {
+                equiped = true;
+            } else if (w instanceof Claymore) {
+                if (hero.getActualClass().getClass().getSimpleName().equalsIgnoreCase("ClaymoreUserClass")) {
+                    equiped = true;
+                } else if (w instanceof Saber) {
+                    if (hero.getActualClass().getClass().getSimpleName().equalsIgnoreCase("SaberUserClass")) {
+                        equiped = true;
+                    }
+
+                    return equiped;
+                }
+            }
+        }
+        return equiped;
+    }
+
+    public boolean equipArmor(Armor a) {
+        hero.getItems().addLast(hero.getArmor());
+        boolean equiped = hero.setArmor(a);
+        return equiped;
     }
 
     public boolean createSaveGame() {
@@ -224,40 +308,40 @@ public class Game {
         characters.add(new Monster((Weapon) items.get(2), 7, 3, 5, 7, 3, "Goblin", null, 20, 20));
         characters.add(new Monster((Weapon) items.get(0), 5, 3, 10, 3, 3, "Mystical Crab", null, 20, 20));
     }
-    
-    public void createClassTree(){
-        
+
+    public void createClassTree() {
+
         BinaryTreeNode<Classes> warrior = new BinaryTreeNode<>(
-            new WarriorClass("The basic class. Hits using fists.", true, true));
+                new WarriorClass("The basic class. Hits using fists.", true, true));
         BinaryTreeNode<Classes> swordman = new BinaryTreeNode<>(
-            new SwordmanClass("Hits using a sword. Can be upgraded to anothers blades.", false, false));
+                new SwordmanClass("Hits using a sword. Can be upgraded to anothers blades.", false, false));
         BinaryTreeNode<Classes> spearman = new BinaryTreeNode<>(
-            new SpearClass("Hits using a spear. Can be upgraded to anothers spears-like.", false, false));
+                new SpearClass("Hits using a spear. Can be upgraded to anothers spears-like.", false, false));
         BinaryTreeNode<Classes> gunner = new BinaryTreeNode<>(
-            new GunnerClass("Hits using a gun. Can be upgraded to anothers fire weapons.", false, false));
+                new GunnerClass("Hits using a gun. Can be upgraded to anothers fire weapons.", false, false));
         BinaryTreeNode<Classes> claymoreUser = new BinaryTreeNode<>(
-            new ClaymoreUserClass("Hits using a claymore.", false, false));
+                new ClaymoreUserClass("Hits using a claymore.", false, false));
         BinaryTreeNode<Classes> sabreUser = new BinaryTreeNode<>(
-            new SabreUserClass("Hits using a sabre.", false, false));
+                new SaberUserClass("Hits using a sabre.", false, false));
         BinaryTreeNode<Classes> rifleUser = new BinaryTreeNode<>(
-            new RifleUserClass("Hits using a rifle.", false, false));
+                new RifleUserClass("Hits using a rifle.", false, false));
         BinaryTreeNode<Classes> shotgunUser = new BinaryTreeNode<>(
-            new ShotgunUserClass("Hits using a shotgun.", false, false));
+                new ShotgunUserClass("Hits using a shotgun.", false, false));
         BinaryTreeNode<Classes> halberdUser = new BinaryTreeNode<>(
-            new HalberdUserClass("Hits using a halberd.", false, false));
+                new HalberdUserClass("Hits using a halberd.", false, false));
         BinaryTreeNode<Classes> pikeUser = new BinaryTreeNode<>(
-            new PikeUserClass("Hits using a pike.", false, false));
-        
+                new PikeUserClass("Hits using a pike.", false, false));
+
         classes.setRoot(warrior);
-        
+
         classes.insertAsFirstSon(swordman, warrior);
         classes.insertAsFirstSon(claymoreUser, swordman);
         classes.insertNode(sabreUser, swordman);
-        
+
         classes.insertNode(spearman, warrior);
         classes.insertAsFirstSon(halberdUser, spearman);
         classes.insertNode(pikeUser, spearman);
-        
+
         classes.insertNode(gunner, warrior);
         classes.insertAsFirstSon(shotgunUser, gunner);
         classes.insertNode(rifleUser, gunner);
