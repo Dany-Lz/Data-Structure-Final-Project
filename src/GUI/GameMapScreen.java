@@ -660,6 +660,7 @@ public class GameMapScreen {
         }
 
         addVillageAtCenter(new Point2D(432.9572420000002, 387.930548), visualW, visualH, "FIELD_VILLAGE");
+        addVillageAtCenter(new Point2D(187.2432599999999, 160.468792), visualW, visualH, "FORESTHOUSE_Village");
     }
 
     private void populateExtraBlocks() {
@@ -782,6 +783,7 @@ public class GameMapScreen {
 
     private void enterVillage(Obstacle village) {
         boolean isFieldVillage = village != null && "FIELD_VILLAGE".equals(village.id);
+        boolean isForestHouse=village!=null && "FORESTHOUSE_Village".equals(village.id);
 
         if (isFieldVillage) {
             final Point2D savedHeroTopLeft = getHeroMapTopLeft();
@@ -813,7 +815,39 @@ public class GameMapScreen {
                     mover.start();
                 });
             });
-        } else {
+        } else 
+           if(isForestHouse){
+            final Point2D savedHeroTopLeft = getHeroMapTopLeft();
+
+            clearInputState();
+
+            stopMapMusic();
+            try {
+                FXGL.getGameScene().removeUINode(root);
+            } catch (Throwable ignored) {
+            }
+
+            ForestHouse field = new ForestHouse(game);
+            field.showWithLoading(null, () -> {
+                Platform.runLater(() -> {
+                    MainScreen.hideMenu();
+                    startMapMusic();
+                    try {
+                        FXGL.getGameScene().addUINode(root);
+                    } catch (Throwable ignored) {
+                    }
+                    heroView.setLayoutX(savedHeroTopLeft.getX());
+                    heroView.setLayoutY(savedHeroTopLeft.getY());
+                    if (debugEnabled) {
+                        drawDebugObstacles();
+                    }
+                    root.requestFocus();
+                    clearInputState();
+                    mover.start();
+                });
+            });
+        }else {
+                
             Alert a = new Alert(Alert.AlertType.INFORMATION);
             a.setTitle("Villa");
             a.setHeaderText(null);
@@ -831,6 +865,7 @@ public class GameMapScreen {
             a.showAndWait();
         }
     }
+    
 
     public void setHeroPosition(double x, double y) {
         if (heroView != null) {
