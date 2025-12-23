@@ -32,13 +32,6 @@ import java.util.List;
 import java.util.Optional;
 import java.util.Random;
 
-/**
- * GameMapScreen completo con soporte para:
- * - pasar referencia al InventoryScreen (this)
- * - registrar/desregistrar su MediaPlayer en AudioManager
- * - exponer getHeroMapTopLeft/getHeroMapCenter para que InventoryScreen guarde posición
- * - mantener todos los métodos previos y la lógica de movimiento/colisiones
- */
 public class GameMapScreen {
 
     public final StackPane root;
@@ -352,19 +345,17 @@ public class GameMapScreen {
     }
 
     private void openInventory() {
-        // Detener el movimiento pero NO la música del mapa (InventoryScreen pausará globalmente)
         mover.stop();
 
-        // Pasar referencia 'this' para que InventoryScreen pueda guardar la posición y detener música si lo desea
         InventoryScreen inventory = new InventoryScreen(game, this);
 
-        // Configurar onClose para cuando se cierra el inventario normalmente
         inventory.setOnClose(() -> {
             Platform.runLater(() -> {
                 try {
                     FXGL.getGameScene().removeUINode(inventory.getRoot());
-                } catch (Throwable ignored) {}
-                // Reanudar el movimiento
+                } catch (Throwable ignored) {
+                }
+
                 mover.start();
                 root.requestFocus();
             });
@@ -503,7 +494,6 @@ public class GameMapScreen {
                 mapMusic.setVolume(MainScreen.getVolumeSetting());
                 mapMusic.play();
 
-                // Registrar en AudioManager para control centralizado
                 AudioManager.register(mapMusic);
             }
         } catch (Throwable ignored) {
@@ -514,7 +504,6 @@ public class GameMapScreen {
         try {
             boolean exists = mapMusic != null;
             if (exists) {
-                // Desregistrar antes de detener
                 AudioManager.unregister(mapMusic);
                 mapMusic.stop();
                 mapMusic.dispose();
@@ -828,7 +817,7 @@ public class GameMapScreen {
             Alert a = new Alert(Alert.AlertType.INFORMATION);
             a.setTitle("Villa");
             a.setHeaderText(null);
-            a.setContentText("Has interactuado con una villa");
+            a.setContentText("Has interactuado con una villa.");
             try {
                 if (root.getScene() != null && root.getScene().getWindow() != null) {
                     a.initOwner(root.getScene().getWindow());
@@ -857,7 +846,6 @@ public class GameMapScreen {
         positionHeroCenter();
     }
 
-    // Métodos auxiliares que ya estaban en tu clase (clearInputState, openDebugCombat, etc.)
     private void clearInputState() {
         up = down = left = right = false;
         draggingMap = false;
@@ -865,16 +853,10 @@ public class GameMapScreen {
 
     private void openDebugCombat() {
         String bg = "/Resources/textures/Battle/fieldBattle.png";
-        List<String> sprites = List.of(
-                "/Resources/sprites/monster1.png",
-                "/Resources/sprites/monster2.png",
-                "/Resources/sprites/monster3.png"
-        );
-
         stopMapMusic();
 
-        GUI.CombatScreen cs = new GUI.CombatScreen(game, bg, sprites, game.getHero());
-        // Pasar la ruta de música de combate configurada (si se cambió desde fuera)
+        GUI.CombatScreen cs = new GUI.CombatScreen(game, bg, "Overworld", game.getHero());
+
         cs.setBattleMusicPath(combatMusicPath);
         //cs.setBattleMusicPath("/Resources/music/bossBattle2.mp3");
 

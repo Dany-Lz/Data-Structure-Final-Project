@@ -5,10 +5,6 @@ import java.util.Collections;
 import java.util.LinkedHashSet;
 import java.util.Set;
 
-/**
- * AudioManager simple para registrar MediaPlayer y pausar/reanudar/stopear todos.
- * Implementación thread-safe básica.
- */
 public final class AudioManager {
 
     private static final Set<MediaPlayer> players = Collections.synchronizedSet(new LinkedHashSet<>());
