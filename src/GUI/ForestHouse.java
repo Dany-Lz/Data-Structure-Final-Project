@@ -367,7 +367,7 @@ public class ForestHouse {
                     try {
                         if (game != null && game.getHero() != null) {
                             Hero h = game.getHero();
-                            h.setLastLocation(Hero.Location.FIELD_VILLAGE);
+                            h.setLastLocation(Hero.Location.FOREST_HOUSE);
                             h.setLastPosX(heroView.getLayoutX());
                             h.setLastPosY(heroView.getLayoutY());
                             try {
@@ -410,7 +410,7 @@ public class ForestHouse {
                     try {
                         if (game != null && game.getHero() != null) {
                             Hero h = game.getHero();
-                            h.setLastLocation(Hero.Location.FIELD_VILLAGE);
+                            h.setLastLocation(Hero.Location.FOREST_HOUSE);
                             h.setLastPosY(heroView.getLayoutY());
                             h.setLastPosX(heroView.getLayoutX());
                             try {
@@ -597,9 +597,9 @@ public class ForestHouse {
         updateCamera();
     }
 
-    private FieldVillage.Direction directionFromVector(double vx, double vy) {
+    private ForestHouse.Direction directionFromVector(double vx, double vy) {
         if (vx == 0 && vy == 0) {
-            return FieldVillage.Direction.NONE;
+            return ForestHouse.Direction.NONE;
         }
         double angle = Math.toDegrees(Math.atan2(-vy, vx));
         if (angle < 0) {
@@ -607,30 +607,30 @@ public class ForestHouse {
         }
 
         if (angle >= 337.5 || angle < 22.5) {
-            return FieldVillage.Direction.E;
+            return ForestHouse.Direction.E;
         }
         if (angle < 67.5) {
-            return FieldVillage.Direction.NE;
+            return ForestHouse.Direction.NE;
         }
         if (angle < 112.5) {
-            return FieldVillage.Direction.N;
+            return ForestHouse.Direction.N;
         }
         if (angle < 157.5) {
-            return FieldVillage.Direction.NW;
+            return ForestHouse.Direction.NW;
         }
         if (angle < 202.5) {
-            return FieldVillage.Direction.W;
+            return ForestHouse.Direction.W;
         }
         if (angle < 247.5) {
-            return FieldVillage.Direction.SW;
+            return ForestHouse.Direction.SW;
         }
         if (angle < 292.5) {
-            return FieldVillage.Direction.S;
+            return ForestHouse.Direction.S;
         }
         if (angle < 337.5) {
-            return FieldVillage.Direction.SE;
+            return ForestHouse.Direction.SE;
         }
-        return FieldVillage.Direction.NONE;
+        return ForestHouse.Direction.NONE;
     }
 
     private void setDirectionIfChanged(ForestHouse.Direction newDir) {

@@ -481,54 +481,43 @@ public class InventoryScreen {
                 + "-fx-cursor: hand;");
         saveButton.setOnAction(e -> {
             try {
-                // 1) Obtener la posición del héroe desde el proveedor (GameMapScreen / FieldVillage)
                 Point2D pos = tryGetHeroTopLeftFromProvider();
 
                 if (pos != null) {
                     Hero h = game.getHero();
                     if (h != null) {
-                        // Inferir tipo de ubicación según la clase del proveedor (village vs map)
-                        try {
-                            String clsName = mapScreen != null ? mapScreen.getClass().getSimpleName().toLowerCase() : "";
-                            if (clsName.contains("village")) {
+                        String clsName = mapScreen != null ? mapScreen.getClass().getSimpleName() : "";
+
+                        switch (clsName) {
+                            case "FieldVillage" ->
                                 h.setLastLocation(Hero.Location.FIELD_VILLAGE);
-                            } else {
+                            case "GameMapScreen" ->
+                                h.setLastLocation(Hero.Location.MAP);
+                            case "ForestHouse" ->
+                                h.setLastLocation(Hero.Location.FOREST_HOUSE);
+                            default -> {
                                 h.setLastLocation(Hero.Location.MAP);
                             }
-                        } catch (Throwable ignored) {
                         }
 
                         h.setLastPosX(pos.getX());
                         h.setLastPosY(pos.getY());
                     }
-                } else {
-                    try {
-                        Hero h = game.getHero();
-                        if (h != null) {
-
-                        }
-                    } catch (Throwable ignored) {
-                    }
                 }
 
-                // 2) Guardar la partida
                 boolean saved = game.createSaveGame();
 
-                // 3) Mensaje al usuario
                 if (saved) {
                     showToast("Game saved successfully!", 1200);
                 } else {
                     showToast("Error saving game.", 1200);
                 }
 
-                // 4) Cerrar el inventario para que el onClose registrado por la pantalla que lo abrió
-                //    reanude mover/foco/música exactamente como cuando se presiona ESC.
-                PauseTransition pt = new PauseTransition(Duration.millis(350)); // pequeño delay para ver el toast
+                PauseTransition pt = new PauseTransition(Duration.millis(350));
                 pt.setOnFinished(ev -> {
                     try {
-                        close(); // close() quita filtros, reanuda audio y ejecuta onClose si existe
+                        close();
                     } catch (Throwable ex) {
-                        // fallback robusto: intentar remover UI y llamar onClose manualmente
                         try {
                             FXGL.getGameScene().removeUINode(root);
                         } catch (Throwable ignored) {
@@ -882,43 +871,7 @@ public class InventoryScreen {
         if (onClose != null) {
             onClose.run();
         }
-    }
 
-    {
-        isVisible = false;
-
-        // Quitar filtros globales
-        try {
-            if (sceneRootRef != null) {
-                if (sceneKeyFilter != null) {
-                    sceneRootRef.removeEventFilter(KeyEvent.ANY, sceneKeyFilter);
-                }
-                if (sceneMouseFilter != null) {
-                    sceneRootRef.removeEventFilter(MouseEvent.ANY, sceneMouseFilter);
-                }
-            }
-        } catch (Throwable ignored) {
-        } finally {
-            sceneKeyFilter = null;
-            sceneMouseFilter = null;
-            sceneRootRef = null;
-        }
-
-        // Quitar UI
-        try {
-            FXGL.getGameScene().removeUINode(root);
-        } catch (Throwable ignored) {
-        }
-
-        // Reanudar todas las músicas registradas
-        try {
-            AudioManager.resumeAll();
-        } catch (Throwable ignored) {
-        }
-
-        if (onClose != null) {
-            onClose.run();
-        }
     }
 
     public void toggle() {

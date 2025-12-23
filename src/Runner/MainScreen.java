@@ -2,8 +2,7 @@ package Runner;
 
 import Characters.Hero;
 import Logic.Game;
-import GUI.GameMapScreen;
-import GUI.FieldVillage;
+import GUI.*;
 import com.almasb.fxgl.app.GameApplication;
 import static com.almasb.fxgl.app.GameApplication.launch;
 import com.almasb.fxgl.app.GameSettings;
@@ -628,14 +627,17 @@ public class MainScreen extends GameApplication {
         StackPane overlay = newLoadingOverlay();
         overlay.setOpacity(0);
         FXGL.getGameScene().addUINode(overlay);
+
         FadeTransition fadeIn = new FadeTransition(Duration.millis(180), overlay);
         fadeIn.setFromValue(0);
         fadeIn.setToValue(1);
         fadeIn.setInterpolator(Interpolator.EASE_OUT);
+
         FadeTransition fadeOut = new FadeTransition(Duration.millis(220), overlay);
         fadeOut.setFromValue(1);
         fadeOut.setToValue(0);
         fadeOut.setInterpolator(Interpolator.EASE_IN);
+
         fadeIn.setOnFinished(e -> {
             PauseTransition pause = new PauseTransition(Duration.millis(DURACION_CARGA_MS));
             pause.setOnFinished(ev -> {
@@ -648,7 +650,6 @@ public class MainScreen extends GameApplication {
                 } catch (Throwable ignored) {
                 }
 
-                // Creamos la pantalla del mapa
                 currentMapScreen = new GameMapScreen(game);
 
                 Hero h = game.getHero();
@@ -657,40 +658,49 @@ public class MainScreen extends GameApplication {
                     double lx = h.getLastPosX();
                     double ly = h.getLastPosY();
 
-                    if (loc == Hero.Location.FIELD_VILLAGE) {
-                        // Abrir la aldea directamente y colocar el héroe en la posición guardada
-                        FieldVillage field = new FieldVillage(game);
-                        field.showWithLoading(() -> {
-                            // al cargar la aldea, colocar el héroe en la posición guardada
-                            Platform.runLater(() -> {
-                                field.setHeroPosition(lx, ly);
+                    switch (loc) {
+                        case FIELD_VILLAGE -> {
+                            FieldVillage field = new FieldVillage(game);
+                            field.showWithLoading(() -> {
+                                Platform.runLater(() -> field.setHeroPosition(lx, ly));
+                            }, () -> {
+                                Platform.runLater(() -> {
+                                    currentMapScreen.show();
+                                    if (h.getLastLocation() == Hero.Location.MAP) {
+                                        currentMapScreen.setHeroPosition(h.getLastPosX(), h.getLastPosY());
+                                    } else {
+                                        currentMapScreen.resetHeroToCenter();
+                                    }
+                                    currentMapScreen.drawDebugObstacles();
+                                });
                             });
-                        }, () -> {
-                            // callback onExit: restaurar mapa y colocar héroe en la posición guardada en el mapa
-                            Platform.runLater(() -> {
-                                // Mostrar mapa y colocar héroe en la posición guardada (si existe)
-                                currentMapScreen.show();
-                                if (h.getLastLocation() == Hero.Location.MAP) {
-                                    currentMapScreen.setHeroPosition(h.getLastPosX(), h.getLastPosY());
-                                } else {
-                                    // si no hay posición de mapa guardada, usar centro por defecto
-                                    currentMapScreen.resetHeroToCenter();
-                                }
-                                currentMapScreen.drawDebugObstacles();
-                            });
-                        });
-                    } else {
-                        // Mostrar mapa y colocar héroe en la posición guardada (si la hay)
-                        if (h.getLastLocation() == Hero.Location.MAP) {
-                            currentMapScreen.setHeroPosition(lx, ly);
-                        } else {
-                            // posición predeterminada: centro del mapa
-                            currentMapScreen.resetHeroToCenter();
                         }
-                        currentMapScreen.show();
+                        case FOREST_HOUSE -> {
+                            ForestHouse fh = new ForestHouse(game);
+                            fh.showWithLoading(() -> {
+                                Platform.runLater(() -> fh.setHeroPosition(lx, ly));
+                            }, () -> {
+                                Platform.runLater(() -> {
+                                    currentMapScreen.show();
+                                    if (h.getLastLocation() == Hero.Location.MAP) {
+                                        currentMapScreen.setHeroPosition(h.getLastPosX(), h.getLastPosY());
+                                    } else {
+                                        currentMapScreen.resetHeroToCenter();
+                                    }
+                                    currentMapScreen.drawDebugObstacles();
+                                });
+                            });
+                        }
+                        case MAP -> {
+                            currentMapScreen.setHeroPosition(lx, ly);
+                            currentMapScreen.show();
+                        }
+                        default -> {
+                            currentMapScreen.resetHeroToCenter();
+                            currentMapScreen.show();
+                        }
                     }
                 } else {
-                    // Sin héroe: mostrar mapa centrado
                     currentMapScreen.resetHeroToCenter();
                     currentMapScreen.show();
                 }
@@ -699,12 +709,14 @@ public class MainScreen extends GameApplication {
             });
             pause.play();
         });
+
         fadeOut.setOnFinished(e2 -> {
             try {
                 FXGL.getGameScene().removeUINode(overlay);
             } catch (Throwable ignored) {
             }
         });
+
         fadeIn.play();
     }
 
