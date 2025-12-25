@@ -12,7 +12,7 @@ public abstract class Weapon extends Item {
         super(info, name, id);
         setAttack(attack);
         setLifeSpan(lifeSpan);
-        setEffect(effect);
+        setEffect(effect);        
     }
 
     public int getAttack() {

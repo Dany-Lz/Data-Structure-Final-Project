@@ -2,10 +2,8 @@ package Characters;
 
 import Items.*;
 import Logic.Game;
-import cu.edu.cujae.ceis.tree.general.GeneralTree;
+import Tree.*;
 import Misc.*;
-import cu.edu.cujae.ceis.tree.binary.BinaryTreeNode;
-import cu.edu.cujae.ceis.tree.iterators.general.InBreadthIterator;
 import java.io.Serializable;
 import java.util.ArrayDeque;
 import java.util.Deque;
@@ -19,7 +17,7 @@ public class Hero implements Serializable {
     private static final long serialVersionUID = 1L;
 
     public enum Location {
-        MAP, FIELD_VILLAGE,FOREST_HOUSE,UNKNOWN
+        MAP, FIELD_VILLAGE, FOREST_HOUSE, UNKNOWN
     }
 
     private String name;
@@ -45,14 +43,14 @@ public class Hero implements Serializable {
     private double lastPosX = 0.0;
     private double lastPosY = 0.0;
 
-    public Hero(String name, Weapon weapon, Armor armor) {
+    public Hero(String name, Weapon weapon, Armor armor, BinaryTreeNode<Classes> root) {
         setName(name);
-        setLife(100);
+        setLife(150);
         setActualLife(100);
         setSpritePath("/Resources/sprites/hero.png");
         setAttack(7);
         setMagic(20);
-        setDefense(6);
+        setDefense(3);
         setLevel(1);
         setExpMax(100);
         setExpActual(0);
@@ -60,10 +58,11 @@ public class Hero implements Serializable {
         setMoney(50);
         items = new LinkedList<>();
         actualWeapon = weapon;
-        unlockedClasses = new GeneralTree<>();
+        unlockedClasses = new GeneralTree<>(root);
         tasks = new ArrayDeque<>();
         completedTasks = new ArrayDeque<>();
         loadFxImage();
+
     }
 
     public int getMoney() {
@@ -98,6 +97,7 @@ public class Hero implements Serializable {
 
     public boolean searchHeroSkillTreeNode(String nodeId) {
         boolean found = false;
+        BinaryTreeNode<Classes> ahya = (BinaryTreeNode<Classes>) unlockedClasses.getRoot();
         InBreadthIterator<Classes> it = unlockedClasses.inBreadthIterator();
         while (it.hasNext() && !found) {
             BinaryTreeNode<Classes> node = it.nextNode();

@@ -782,7 +782,7 @@ public class GameMapScreen {
 
     private void enterVillage(Obstacle village) {
         boolean isFieldVillage = village != null && "FIELD_VILLAGE".equals(village.id);
-        boolean isForestHouse=village!=null && "FORESTHOUSE_Village".equals(village.id);
+        boolean isForestHouse = village != null && "FORESTHOUSE_Village".equals(village.id);
 
         if (isFieldVillage) {
             final Point2D savedHeroTopLeft = getHeroMapTopLeft();
@@ -814,8 +814,7 @@ public class GameMapScreen {
                     mover.start();
                 });
             });
-        } else 
-           if(isForestHouse){
+        } else if (isForestHouse) {
             final Point2D savedHeroTopLeft = getHeroMapTopLeft();
 
             clearInputState();
@@ -845,8 +844,8 @@ public class GameMapScreen {
                     mover.start();
                 });
             });
-        }else {
-                
+        } else {
+
             Alert a = new Alert(Alert.AlertType.INFORMATION);
             a.setTitle("Villa");
             a.setHeaderText(null);
@@ -864,7 +863,6 @@ public class GameMapScreen {
             a.showAndWait();
         }
     }
-    
 
     public void setHeroPosition(double x, double y) {
         if (heroView != null) {
@@ -889,7 +887,7 @@ public class GameMapScreen {
         String bg = "/Resources/textures/Battle/fieldBattle.png";
         stopMapMusic();
 
-        GUI.CombatScreen cs = new GUI.CombatScreen(game, bg, "Swamp", game.getHero());
+        GUI.CombatScreen cs = new GUI.CombatScreen(game, bg, "Overworld", game.getHero());
 
         cs.setBattleMusicPath(combatMusicPath);
         //cs.setBattleMusicPath("/Resources/music/bossBattle2.mp3");
@@ -918,4 +916,3 @@ public class GameMapScreen {
         });
     }
 }
-

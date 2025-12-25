@@ -1,7 +1,10 @@
 package Misc;
 
-public abstract class Classes {
+import java.io.Serializable;
 
+public abstract class Classes implements Serializable {
+
+    private static final long serialVersionUID = 1L;
     protected String description;
     protected boolean unlocked;
     protected String id;
