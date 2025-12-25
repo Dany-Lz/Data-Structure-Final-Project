@@ -296,10 +296,10 @@ public class Game {
         items.add(new Fist("Tentacles to constrict the enemy", "Tentacles", "H004", 14, 120000, "Inflicts damage by constriction."));
         items.add(new Spell("Fire throwing spell", "Flamethrower", "H005", 12, 15, "Inflicts damage by burning."));
         //Healing items
-        items.add(new Potion("It cures.", "Ultra Potion", "P000", 75));
-        items.add(new Potion("It cures.", "Sacred Potion", "P001", 100));
-        items.add(new Berry("It cures.", "Blueberry", "B000", 10));
-        items.add(new Berry("It cures.", "Raspberry", "B001", 25));
+        items.add(new Wares("It cures.", "Ultra Potion", "P000", 75));
+        items.add(new Wares("It cures.", "Sacred Potion", "P001", 100));
+        items.add(new Wares("It cures.", "Blueberry", "B000", 10));
+        items.add(new Wares("It cures.", "Raspberry", "B001", 25));
   
     }
 
