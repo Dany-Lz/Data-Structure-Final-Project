@@ -109,7 +109,7 @@ public class MainScreen extends GameApplication {
         game = new Game();
         game.createItems();
         game.createMonsters();
-
+ 
     }
 
     @Override
@@ -553,7 +553,6 @@ public class MainScreen extends GameApplication {
                 }
                 break;
             case "Nueva Partida":
-                initGame();
                 String name = showNewGameDialog();
                 if (name != null) {
                     game.createHero(name);
