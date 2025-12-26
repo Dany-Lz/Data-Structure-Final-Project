@@ -21,7 +21,7 @@ public class Game {
     private File archives;
     private Hero hero;
     private ArrayList<NPC> characters;
-    private Queue<Task> tasks;
+    private ArrayList<Task> tasks;
     private ArrayList<Item> items;
     private GeneralTree<Classes> classes;
     private LocalDateTime playedTime;
@@ -40,6 +40,8 @@ public class Game {
         hero.getItems().addLast(items.get(15));
         hero.getItems().addLast(items.get(16));
         hero.getItems().addLast(items.get(9));
+        hero.getItems().addLast(items.get(23));
+        hero.getItems().addLast(items.get(24));
     }
 
     public LocalDateTime getPlayedTime() {
@@ -66,12 +68,12 @@ public class Game {
         characters.add(npc);
     }
 
-    public Queue<Task> getTasks() {
+    public ArrayList<Task> getTasks() {
         return tasks;
     }
 
     public void addTasks(Task t) {
-        tasks.offer(t);
+        tasks.add(t);
     }
 
     public ArrayList<Item> getItems() {
@@ -108,7 +110,7 @@ public class Game {
         }
 
         this.characters = new ArrayList<>();
-        this.tasks = new ArrayDeque<>();
+        this.tasks = new ArrayList<>();
         this.items = new ArrayList<>();
         this.classes = new GeneralTree<>();
 
@@ -288,13 +290,27 @@ public class Game {
         items.add(new Spell("Dark magic spells", "Basic Spell", "H003", 6, 10, "It can attack launching shadow balls"));
         items.add(new Fist("Tentacles to constrict the enemy", "Tentacles", "H004", 14, 120000, "Inflicts damage by constriction."));
         items.add(new Spell("Fire throwing spell", "Flamethrower", "H005", 12, 15, "Inflicts damage by burning."));
-        items.add(new Armor("Basic Armor", "Adventurer´s Cloath", "A001", 9, "Worn by a misteryous adventurer that once saved the Kingdom."));
+        items.add(new Armor("Basic Armor", "Adventurer´s Cloath", "A001", 9, "Worn by a mysterious adventurer that once saved the Kingdom."));
         //    Weapon w = new Weapon(info, name, id, 0, 0, effect) 
+        
         //Healing items
         items.add(new Wares("It cures.", "Ultra Potion", "P000", 75));
         items.add(new Wares("It cures.", "Sacred Potion", "P001", 100));
         items.add(new Wares("It cures.", "Blueberry", "B000", 10));
         items.add(new Wares("It cures.", "Raspberry", "B001", 25));
+        //Wares(String description, String name, String id, int healing)
+        
+        //Key Items
+        items.add(new KeyItem("A mysterious orb found in the Swamp.", "Toxic Orb.", "K000"));
+        items.add(new KeyItem("A mysterious orb found in the Volcano.", "Lava Orb.", "K001"));
+        items.add(new KeyItem("Use it to open a door.", "Key.", "K002"));
+        items.add(new KeyItem("The Village's Mayor authorization.", "Mayor's letter.", "K003"));        
+        //KeyItem(String info, String name, String id)
+        
+        //More armor
+        items.add(new Armor("Stronger armor", "Steel Plate", "A002", 14, "A sturdy armor forged by a great smith."));
+        items.add(new Armor("Stronger armor", "Sapphire Plate", "A003", 20, "Majestic armor worn by the most royal soldiers."));
+        //Armor(String info, String name, String id ,int defense, String effect)
 
     }
 
@@ -329,10 +345,12 @@ public class Game {
         characters.add(new Monster((Weapon) items.get(2), 25, 14, "Demon Harpy", "/Resources/sprites/Monsters/skyMonster04.png", 320, 320, 250, 180, "Sky"));
         characters.add(new Monster((Weapon) items.get(13), 85, 90, "Light Rider", "/Resources/sprites/Monsters/skyBoss01.png", 1500, 1500, 1500, 1000, "SkyBoss"));
         characters.add(new Monster((Weapon) items.get(13), 125, 100, "Count Artigas", "/Resources/sprites/Monsters/finalBoss.png", 3500, 3500, 2500, 10500, "SkyBoss"));
+        
+        //Monster m = new Monster(weapon, attack, defense, name, sprite, life, actualLife, exp, money, encounter)
     }
 
     public void createClassTree() {
-
+        
         BinaryTreeNode<Classes> warrior = new BinaryTreeNode<>(
                 new WarriorClass("The basic class. Hits using fists and Hand to hand combat.", true, "fist"));
         BinaryTreeNode<Classes> swordman = new BinaryTreeNode<>(
@@ -359,7 +377,9 @@ public class Game {
                 new PikeUserClass("Hits using spells with wands", false, "wand"));
         BinaryTreeNode<Classes> healing = new BinaryTreeNode<>(
                 new PikeUserClass("Lets you heal", false, "healingSpell"));
-
+        //Classes(String description, boolean unlocked, String id)
+        
+        
         classes.setRoot(warrior);
 
         classes.insertAsFirstSon(swordman, warrior);
@@ -378,6 +398,19 @@ public class Game {
         classes.insertAsFirstSon(wands, Magician);
         classes.insertNode(healing, Magician);
 
+    }
+    
+    public void createTasks(){
+        //Main Quests
+        addTasks(new Task("Explore the sky Ruins.", "Complete the road of Sky Island.", "T000", 10000, true));
+        addTasks(new Task("Search the Toxic Orb.", "Complete the road of Swamp.", "T001", 1000, true));
+        addTasks(new Task("Search the Lava Orb.", "Complete the road of Volcano.", "T0002", 1000, true));
+        addTasks(new Task("Get the Mayor's authorization.", "Talk with Village's Mayor.", "T003", 500, true));
+        //Secondary Quests
+        addTasks(new Task("Defeat 5 monsters.", "Kill 5 monsters anywhere.", "T004", 500, false));
+        addTasks(new Task("Defeat 30 monsters.", "Kill 30 monsters anywhere.", "T005", 1000, false));
+        addTasks(new Task("Heal yourself.", "Use a healing item once.", "T006", 100, false));
+        //Task(String name, String info, String id, int money, boolean mainQuest)
     }
 
 }

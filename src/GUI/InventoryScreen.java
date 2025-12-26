@@ -337,7 +337,7 @@ public class InventoryScreen {
         Armor equippedArmor = hero.getArmor();
         if (equippedArmor != null) {
             HBox equippedRow = createItemRow(equippedArmor.getName(),
-                    "Defense: " + equippedArmor.getDefense() + " | Effect: " + equippedArmor.getEffect(),
+                    "Defense: " + equippedArmor.getDefense() + " | Info: " + equippedArmor.getEffect(),
                     true);
             equippedRow.setStyle("-fx-background-color: rgba(68, 170, 255, 0.1); -fx-background-radius: 5;");
             armorEquippedBox.getChildren().add(equippedRow);
@@ -357,7 +357,7 @@ public class InventoryScreen {
 
             }
             HBox armorRow = createItemRow(a.getName(),
-                    "Defense: " + a.getDefense() + " | Effect: " + a.getEffect(),
+                    "Defense: " + a.getDefense() + " | Info: " + a.getEffect(),
                     false);
             Button equipButton = new Button("Equip");
             equipButton.setOnAction(ev -> handleEquipArmor(a));

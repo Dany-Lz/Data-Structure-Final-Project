@@ -14,4 +14,63 @@ public class Task implements Serializable {
     private boolean mainQuest;
     private ArrayList<Item> rewards;
     private int money;
+
+    public Task(String name, String info, String id, int money, boolean mainQuest) {
+        setName(name);
+        setInfo(info);
+        setId(id);
+        setMoney(money);
+        setMainQuest(mainQuest);
+        this.state = false;
+        this.rewards = new ArrayList<>();
+    }
+
+    public String getName() {
+        return name;
+    }
+
+    public void setName(String name) {
+        this.name = name;
+    }
+
+    public String getInfo() {
+        return info;
+    }
+
+    public void setInfo(String info) {
+        this.info = info;
+    }
+
+    public String getId() {
+        return id;
+    }
+
+    public void setId(String id) {
+        this.id = id;
+    }
+
+    public boolean isState() {
+        return state;
+    }
+
+    public void setState(boolean state) {
+        this.state = state;
+    }
+
+    public boolean isMainQuest() {
+        return mainQuest;
+    }
+
+    public void setMainQuest(boolean mainQuest) {
+        this.mainQuest = mainQuest;
+    }
+
+    public int getMoney() {
+        return money;
+    }
+
+    public void setMoney(int money) {
+        this.money = money;
+    }
+
 }
