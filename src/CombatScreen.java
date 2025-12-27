@@ -1,0 +1,739 @@
+package GUI;
+
+import Logic.Game;
+import Characters.*;
+import Items.Weapon;
+import com.almasb.fxgl.dsl.FXGL;
+import javafx.animation.FadeTransition;
+import javafx.animation.PauseTransition;
+import javafx.animation.SequentialTransition;
+import javafx.application.Platform;
+import javafx.geometry.Insets;
+import javafx.geometry.Pos;
+import javafx.scene.Cursor;
+import javafx.scene.control.Button;
+import javafx.scene.control.Label;
+import javafx.scene.image.Image;
+import javafx.scene.image.ImageView;
+import javafx.scene.input.KeyCode;
+import javafx.scene.input.KeyEvent;
+import javafx.scene.layout.*;
+import javafx.scene.media.Media;
+import javafx.scene.media.MediaPlayer;
+import javafx.scene.paint.Color;
+import javafx.scene.shape.Rectangle;
+import javafx.scene.text.Font;
+import javafx.scene.text.Text;
+import Runner.MainScreen;
+
+import java.net.URL;
+import java.util.ArrayDeque;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.Queue;
+import java.util.Random;
+
+public class CombatScreen {
+
+    public final StackPane root;
+    private final Pane content;
+    private final ImageView backgroundView;
+
+    // Layout regions
+    private final Pane leftPane;
+    private final Pane centerPane;
+    private final Pane rightPane;
+    private final HBox monstersBox;
+    private final HBox actionButtons;
+
+    private final Game game;
+    private final List<Monster> monsters = new ArrayList<>();
+    private final List<ImageView> monsterViews = new ArrayList<>();
+    private final Random rnd = new Random();
+    private final int origDefense;
+// Botones y selección por teclado
+    private final List<Button> buttons = new ArrayList<>();
+    private int selectedButtonIndex = 0;
+
+    private Runnable onExit; // callback opcional al cerrar combate
+
+    // Game Over UI
+    private StackPane gameOverOverlay = null;
+    private MediaPlayer gameOverPlayer = null;
+
+    // Música de combate
+    private MediaPlayer battleMusic = null;
+
+    // Ruta configurable de la música de combate (puede cambiarse desde fuera)
+    private String battleMusicPath = "/Resources/music/fieldBattle.mp3";
+
+    // Flag que indica que estamos en estado Game Over (bloquea inputs salvo Start)
+    private volatile boolean gameOverActive = false;
+
+    // Cola de toasts (mensajes temporales no modales, uno a la vez)
+    private final ToastQueue toastQueue = new ToastQueue();
+
+    // Label para mostrar vida del héroe (actual / total)
+    private final Label heroHpLabel = new Label();
+
+    public CombatScreen(Game game, String bgPath, String encounter, Hero heroForIcon) {
+        this.game = game;
+        origDefense = game.getHero().getDefense();
+
+        root = new StackPane();
+        root.setPrefSize(800, 600);
+
+        // Fondo
+        Image bg = null;
+        try {
+            bg = new Image(getClass().getResourceAsStream(bgPath));
+        } catch (Throwable ignored) {
+        }
+        backgroundView = new ImageView(bg);
+        backgroundView.setPreserveRatio(false);
+        backgroundView.setFitWidth(800);
+        backgroundView.setFitHeight(600);
+
+        content = new Pane();
+        content.setPrefSize(800, 600);
+
+        leftPane = new Pane();
+        leftPane.setPrefSize(220, 600);
+        leftPane.setLayoutX(0);
+        leftPane.setLayoutY(0);
+
+        centerPane = new Pane();
+        centerPane.setPrefSize(360, 600);
+        centerPane.setLayoutX(220);
+        centerPane.setLayoutY(0);
+
+        rightPane = new Pane();
+        rightPane.setPrefSize(220, 600);
+        rightPane.setLayoutX(520);
+        rightPane.setLayoutY(0);
+
+        monstersBox = new HBox(8);
+        monstersBox.setAlignment(Pos.CENTER);
+        monstersBox.setPrefWidth(200);
+        monstersBox.setLayoutX(10);
+        monstersBox.setLayoutY(120);
+        rightPane.getChildren().add(monstersBox);
+
+        Rectangle bottomPanel = new Rectangle(800, 96, Color.rgb(10, 10, 10, 0.86));
+        bottomPanel.setLayoutX(0);
+        bottomPanel.setLayoutY(504);
+
+        actionButtons = new HBox(12);
+        actionButtons.setAlignment(Pos.CENTER);
+        actionButtons.setPadding(new Insets(12));
+        actionButtons.setLayoutX(0);
+        actionButtons.setLayoutY(520);
+        actionButtons.setPrefWidth(800);
+
+        content.getChildren().addAll(backgroundView, leftPane, centerPane, rightPane, bottomPanel, actionButtons);
+        root.getChildren().add(content);
+
+        createHeroIcon(heroForIcon);
+
+        // Hero HP label: esquina superior derecha
+        setupHeroHpLabel();
+
+        // Generar entre 1 y 3 monstruos y colocarlos en monstersBox
+        int count = 1 + rnd.nextInt(3);
+        int i = 0;
+        while (i < count) {
+            Monster m = foundMonster(encounter);
+            monsters.add(m);
+            ImageView mv = createMonsterView(m);
+            monsterViews.add(mv);
+            VBox wrapper = new VBox(6);
+            wrapper.setAlignment(Pos.CENTER);
+            Text name = new Text(m.getName());
+            name.setFill(Color.WHITE);
+            name.setFont(Font.font(12));
+            wrapper.getChildren().addAll(mv, name);
+            wrapper.setMouseTransparent(true);
+            monstersBox.getChildren().add(wrapper);
+            i = i + 1;
+        }
+
+        // Crear botones y lógica de selección
+        createActionButtons();
+
+        // Instalar manejadores de teclado para controlar botones
+        installKeyHandlers();
+
+        // Reproducir música de combate cuando la escena se añade
+        root.sceneProperty().addListener((obs, oldScene, newScene) -> {
+            if (newScene != null) {
+                stopBattleMusic();
+                playBattleMusic();
+                Platform.runLater(root::requestFocus);
+            } else {
+                stopBattleMusic();
+            }
+        });
+
+        // Inicializar visual de HP
+        updateHeroHpDisplay();
+
+        root.setCursor(Cursor.DEFAULT);
+        Platform.runLater(() -> root.requestFocus());
+    }
+
+    public void setBattleMusicPath(String path) {
+        if (path != null && !path.isBlank()) {
+            this.battleMusicPath = path;
+        }
+    }
+
+    private void setupHeroHpLabel() {
+        heroHpLabel.setStyle("-fx-background-color: rgba(0,0,0,0.6); -fx-text-fill: white; -fx-padding: 6 10 6 10; -fx-background-radius: 6;");
+        heroHpLabel.setFont(Font.font(13));
+        heroHpLabel.setMouseTransparent(true);
+        StackPane.setAlignment(heroHpLabel, Pos.TOP_RIGHT);
+        heroHpLabel.setTranslateX(-12);
+        heroHpLabel.setTranslateY(12);
+        root.getChildren().add(heroHpLabel);
+    }
+
+    private void updateHeroHpDisplay() {
+        Platform.runLater(() -> {
+            try {
+                if (game != null && game.getHero() != null) {
+                    int actual = game.getHero().getActualLife();
+                    int max = game.getHero().getLife();
+                    heroHpLabel.setText("HP: " + actual + " / " + max);
+                } else {
+                    heroHpLabel.setText("HP: - / -");
+                }
+            } catch (Throwable ignored) {
+                heroHpLabel.setText("HP: - / -");
+            }
+        });
+    }
+
+    private Monster foundMonster(String encounter) {
+        Monster m = null;
+        boolean found = false;
+        while (!found) {
+            for (int i = 0; i < game.getCharacters().size() && !found; i++) {
+                NPC n = game.getCharacters().get(i);
+                if (n instanceof Monster) {
+                    if (((Monster) n).getEncounter().equalsIgnoreCase(encounter)) {
+                        if (rnd.nextInt(0, 10) == 7) {
+                            Monster t = (Monster) n;
+                            m = new Monster(t.getActualWeapon(), t.getAttack(), t.getDefense(), t.getName(),
+                                    t.getSpritePath(), t.getLife(), t.getActualLife(), t.getExp(), t.getMoney(), t.getEncounter());
+                            found = true;
+                        }
+                    }
+                }
+            }
+        }
+        return m;
+    }
+
+    private ImageView createMonsterView(Monster m) {
+        Image img = null;
+        try {
+            img = m.getFxImage();
+        } catch (Throwable ignored) {
+        }
+        ImageView iv = new ImageView(img);
+        iv.setPreserveRatio(true);
+        iv.setFitWidth(88);
+        iv.setFitHeight(88);
+        iv.setSmooth(true);
+        return iv;
+    }
+
+    private void createHeroIcon(Hero heroForIcon) {
+        Image heroImg = null;
+        if (heroForIcon != null) {
+            try {
+                heroImg = heroForIcon.getImage();
+            } catch (Throwable ignored) {
+            }
+        }
+        if (heroImg == null && game != null && game.getHero() != null) {
+            try {
+                heroImg = game.getHero().getImage();
+            } catch (Throwable ignored) {
+            }
+        }
+        if (heroImg == null) {
+            try {
+                heroImg = new Image(getClass().getResourceAsStream(game.getHero().getSpritePath()));
+            } catch (Throwable ignored) {
+            }
+        }
+        ImageView heroIv = new ImageView(heroImg);
+        heroIv.setPreserveRatio(true);
+        heroIv.setFitWidth(120);
+        heroIv.setFitHeight(120);
+        heroIv.setSmooth(true);
+
+        double leftMargin = 40;
+        double paneHeight = leftPane.getPrefHeight();
+        double ivHeight = 120;
+        double layoutY = (paneHeight - ivHeight) / 2.0;
+        heroIv.setLayoutX(leftMargin);
+        heroIv.setLayoutY(layoutY);
+
+        Text name = new Text((game != null && game.getHero() != null) ? game.getHero().getName() : (heroForIcon != null ? heroForIcon.getName() : "Heroe"));
+        name.setFill(Color.WHITE);
+        name.setFont(Font.font(14));
+        name.setLayoutX(leftMargin);
+        name.setLayoutY(layoutY + ivHeight + 18);
+
+        leftPane.getChildren().addAll(heroIv, name);
+    }
+
+    private void createActionButtons() {
+        Button bBattle = styledButton("Battle");
+        Button bItem = styledButton("Item");
+        Button bDefend = styledButton("Defend");
+        Button bEscape = styledButton("Escape");
+
+        buttons.add(bBattle);
+        buttons.add(bItem);
+        buttons.add(bDefend);
+        buttons.add(bEscape);
+
+        bBattle.setOnAction(e -> {
+            if (!gameOverActive) {
+                game.getHero().setDefense(origDefense);
+                onBattle();
+            }
+        });
+        bItem.setOnAction(e -> {
+            if (!gameOverActive) {
+                game.getHero().setDefense(origDefense);
+                toastQueue.enqueue("Item: acción ejecutada correctamente.");
+                monstersAttackAfterHeroAction();
+            }
+        });
+        bDefend.setOnAction(e -> {
+            if (!gameOverActive) {
+                game.getHero().setDefense(origDefense);
+                Hero h = game.getHero();
+                h.setDefense(h.getDefense() + rnd.nextInt(0, 10));
+                toastQueue.enqueue("The Defense has augmented in this turn. Now it has a value of: " + String.valueOf(h.getDefense()));
+                monstersAttackAfterHeroAction();
+            }
+        });
+        bEscape.setOnAction(e -> {
+            if (!gameOverActive) {
+                game.getHero().setDefense(origDefense);
+                closeCombatAndReturnToMap();
+            }
+        });
+
+        actionButtons.getChildren().addAll(bBattle, bItem, bDefend, bEscape);
+        updateButtonSelection();
+    }
+
+    private Button styledButton(String text) {
+        Button b = new Button(text);
+        b.setMinWidth(140);
+        b.setMinHeight(44);
+        b.setStyle("-fx-background-color: linear-gradient(#3a7bd5,#00d2ff); -fx-text-fill: white; -fx-font-weight: bold; -fx-background-radius: 6;");
+        b.setFont(Font.font(14));
+        return b;
+    }
+
+    private void installKeyHandlers() {
+        root.addEventFilter(KeyEvent.KEY_PRESSED, ev -> {
+            if (gameOverActive) {
+                ev.consume();
+                return;
+            }
+
+            KeyCode code = ev.getCode();
+
+            if (code == KeyCode.LEFT) {
+                ev.consume();
+                selectedButtonIndex = Math.max(0, selectedButtonIndex - 1);
+                updateButtonSelection();
+                return;
+            }
+            if (code == KeyCode.RIGHT) {
+                ev.consume();
+                selectedButtonIndex = Math.min(buttons.size() - 1, selectedButtonIndex + 1);
+                updateButtonSelection();
+                return;
+            }
+
+            if (code == KeyCode.ENTER || code == KeyCode.SPACE) {
+                ev.consume();
+                Button sel = buttons.get(selectedButtonIndex);
+                if (sel != null) {
+                    sel.fire();
+                }
+                return;
+            }
+
+            if (code == KeyCode.DIGIT1 || code == KeyCode.NUMPAD1) {
+                ev.consume();
+                buttons.get(0).fire();
+                return;
+            }
+            if (code == KeyCode.DIGIT2 || code == KeyCode.NUMPAD2) {
+                ev.consume();
+                if (buttons.size() > 1) {
+                    buttons.get(1).fire();
+                }
+                return;
+            }
+            if (code == KeyCode.DIGIT3 || code == KeyCode.NUMPAD3) {
+                ev.consume();
+                if (buttons.size() > 2) {
+                    buttons.get(2).fire();
+                }
+                return;
+            }
+            if (code == KeyCode.DIGIT4 || code == KeyCode.NUMPAD4) {
+                ev.consume();
+                if (buttons.size() > 3) {
+                    buttons.get(3).fire();
+                }
+                return;
+            }
+
+        });
+    }
+
+    private void updateButtonSelection() {
+        int i = 0;
+        while (i < buttons.size()) {
+            Button b = buttons.get(i);
+            if (i == selectedButtonIndex) {
+                b.setStyle("-fx-background-color: linear-gradient(#ffd54f,#ffb300); -fx-text-fill: black; -fx-font-weight: bold; -fx-background-radius: 6; -fx-border-color: #ffffff55; -fx-border-width: 2;");
+            } else {
+                b.setStyle("-fx-background-color: linear-gradient(#3a7bd5,#00d2ff); -fx-text-fill: white; -fx-font-weight: bold; -fx-background-radius: 6;");
+            }
+            i = i + 1;
+        }
+    }
+
+    // acciones de combate  
+    private void onBattle() {
+        boolean hadTarget = false;
+        Monster target = null;
+        int tIndex = 0;
+        int monstersCount = monsters.size();
+
+        while (tIndex < monstersCount && !hadTarget) {
+            Monster m = monsters.get(tIndex);
+            if (m.getActualLife() > 0) {
+                target = m;
+                hadTarget = true;
+            }
+            tIndex = tIndex + 1;
+        }
+
+        boolean endCombatNow = false;
+        if (!hadTarget) {
+            endCombatNow = true;
+        }
+
+        boolean heroDidDamage = false;
+        if (!endCombatNow && target != null) {
+            heroDidDamage = game.heroCombat(target);
+            final Monster finalTarget = target;
+            final boolean finalHeroDidDamage = heroDidDamage;
+            String heroMsg = finalHeroDidDamage
+                    ? ("You attacked " + finalTarget.getName() + ". Monster's remaining life: " + finalTarget.getActualLife())
+                    : "Your attack didn't damaged any monster.";
+            toastQueue.enqueue(heroMsg);
+            updateHeroHpDisplay();
+        }
+
+        boolean removedOne = false;
+        if (!endCombatNow && target != null && game.checkGameOver(target.getActualLife())) {
+            game.getHero().sumExp(target.getExp());
+            game.getHero().setMoney(game.getHero().getMoney() + target.getMoney());
+            removeMonster(target);
+            removedOne = true;
+        }
+
+        if (!endCombatNow) {
+            if (monsters.isEmpty()) {
+                endCombatNow = true;
+            }
+        }
+
+        if (endCombatNow) {
+            boolean leveled = game.levelUp();
+            if (leveled) {
+                String alert = "You have leveled up! Now You Are level" + String.valueOf(game.getHero().getLevel());
+                toastQueue.enqueue(alert);
+            }
+            endCombatAndReturnToMap();
+        }
+        if (!endCombatNow) {
+            monstersAttackAfterHeroAction();
+        }
+    }
+
+    private void monstersAttackAfterHeroAction() {
+        int idx = 0;
+        int total = monsters.size();
+        boolean heroDied = false;
+
+        while (idx < total && !heroDied) {
+            Monster m = monsters.get(idx);
+            boolean alive = m.getActualLife() > 0;
+            if (alive) {
+                boolean monsterDidDamage = game.combat(m);
+                int heroHp = game.getHero().getActualLife();
+                final String msg = monsterDidDamage
+                        ? (m.getName() + " Attacked, your life has decreased!")
+                        : (m.getName() + " Attacked but didn't damaged!");
+                toastQueue.enqueue(msg);
+                updateHeroHpDisplay();
+
+                if (game.checkGameOver(heroHp)) {
+                    heroDied = true;
+                }
+            }
+            idx = idx + 1;
+        }
+
+        if (heroDied) {
+            showGameOver();
+        }
+    }
+
+    private void removeMonster(Monster m) {
+        int idx = monsters.indexOf(m);
+        if (idx >= 0) {
+            monsters.remove(idx);
+            if (idx < monstersBox.getChildren().size()) {
+                final int removeIdx = idx;
+                Platform.runLater(() -> monstersBox.getChildren().remove(removeIdx));
+            }
+        }
+    }
+
+    private void endCombatAndReturnToMap() {
+        stopBattleMusic();
+        Platform.runLater(() -> {
+            try {
+                FXGL.getGameScene().removeUINode(root);
+            } catch (Throwable ignored) {
+            }
+            if (onExit != null) {
+                onExit.run();
+            }
+        });
+    }
+
+    private void closeCombatAndReturnToMap() {
+        endCombatAndReturnToMap();
+    }
+
+    // Game Over
+    private void showGameOver() {
+        Platform.runLater(() -> {
+            if (gameOverOverlay != null) {
+                return;
+            }
+
+            gameOverActive = true;
+
+            stopBattleMusic();
+
+            StackPane overlay = new StackPane();
+            overlay.setPrefSize(800, 600);
+            overlay.setStyle("-fx-background-color: rgba(0,0,0,0.85);");
+
+            VBox vbox = new VBox(18);
+            vbox.setAlignment(Pos.CENTER);
+
+            Image goImg = null;
+            try {
+                goImg = new Image(getClass().getResourceAsStream("/Resources/textures/Main/gameOver.png"));
+            } catch (Throwable ignored) {
+            }
+            ImageView goView = new ImageView(goImg);
+            goView.setPreserveRatio(true);
+            goView.setFitWidth(600);
+            goView.setFitHeight(400);
+
+            Button startBtn = new Button("Start");
+            startBtn.setMinWidth(160);
+            startBtn.setMinHeight(44);
+            startBtn.setStyle("-fx-background-color: linear-gradient(#ff5f6d,#ffc371); -fx-text-fill: white; -fx-font-weight: bold; -fx-background-radius: 6;");
+            startBtn.setFont(Font.font(16));
+
+            startBtn.setOnAction(ev -> {
+                stopGameOverMusic();
+                stopBattleMusic();
+                try {
+                    FXGL.getGameScene().removeUINode(root);
+                } catch (Throwable ignored) {
+                }
+                try {
+                    FXGL.getGameScene().removeUINode(overlay);
+                } catch (Throwable ignored) {
+                }
+                MainScreen.restoreMenuAndMusic();
+            });
+
+            vbox.getChildren().addAll(goView, startBtn);
+            overlay.getChildren().add(vbox);
+
+            gameOverOverlay = overlay;
+
+            try {
+                FXGL.getGameScene().addUINode(overlay);
+            } catch (Throwable ignored) {
+            }
+
+            playGameOverMusic();
+        });
+    }
+
+    private void playGameOverMusic() {
+        try {
+            stopGameOverMusic();
+            URL res = getClass().getResource("/Resources/music/gameOver.mp3");
+            if (res != null) {
+                Media media = new Media(res.toExternalForm());
+                gameOverPlayer = new MediaPlayer(media);
+                gameOverPlayer.setCycleCount(MediaPlayer.INDEFINITE);
+                gameOverPlayer.setVolume(MainScreen.getVolumeSetting());
+                gameOverPlayer.play();
+            }
+        } catch (Throwable ignored) {
+        }
+    }
+
+    private void stopGameOverMusic() {
+        try {
+            if (gameOverPlayer != null) {
+                gameOverPlayer.stop();
+                gameOverPlayer.dispose();
+                gameOverPlayer = null;
+            }
+        } catch (Throwable ignored) {
+        }
+    }
+
+// Musica
+    private void playBattleMusic() {
+        try {
+            stopBattleMusic();
+            URL res = getClass().getResource(battleMusicPath);
+            if (res != null) {
+                Media media = new Media(res.toExternalForm());
+                battleMusic = new MediaPlayer(media);
+                battleMusic.setCycleCount(MediaPlayer.INDEFINITE);
+                battleMusic.setVolume(MainScreen.getVolumeSetting());
+                battleMusic.play();
+            } else {
+
+                try {
+                    Media media = new Media(battleMusicPath);
+                    battleMusic = new MediaPlayer(media);
+                    battleMusic.setCycleCount(MediaPlayer.INDEFINITE);
+                    battleMusic.setVolume(MainScreen.getVolumeSetting());
+                    battleMusic.play();
+                } catch (Throwable ignored) {
+                }
+            }
+        } catch (Throwable ignored) {
+        }
+    }
+
+    private void stopBattleMusic() {
+        try {
+            if (battleMusic != null) {
+                battleMusic.stop();
+                battleMusic.dispose();
+                battleMusic = null;
+            }
+        } catch (Throwable ignored) {
+        }
+    }
+
+    public void setOnExit(Runnable onExit) {
+        this.onExit = onExit;
+    }
+
+    public void show() {
+        Platform.runLater(() -> {
+            try {
+                FXGL.getGameScene().addUINode(root);
+            } catch (Throwable ignored) {
+            }
+            root.requestFocus();
+        });
+    }
+
+    private class ToastQueue {
+
+        private final Queue<String> q = new ArrayDeque<>();
+        private boolean showing = false;
+        private final double DURATION_SECONDS = 1.2;
+        private final double FADE_SECONDS = 0.22;
+
+        public synchronized void enqueue(String msg) {
+            q.offer(msg == null ? "" : msg);
+            if (!showing) {
+                showing = true;
+                Platform.runLater(this::showNext);
+            }
+        }
+
+        private void showNext() {
+            String msg = q.poll();
+            if (msg == null) {
+                showing = false;
+                return;
+            }
+
+            Label lbl = new Label(msg);
+            lbl.setStyle("-fx-background-color: rgba(0,0,0,0.75); -fx-text-fill: white; -fx-padding: 10 16 10 16; -fx-background-radius: 8; -fx-font-size: 13;");
+            lbl.setOpacity(0.0);
+
+            StackPane container = new StackPane(lbl);
+            container.setPickOnBounds(false);
+            container.setMouseTransparent(true);
+            container.setPrefSize(800, 600);
+
+            StackPane.setAlignment(lbl, Pos.BOTTOM_CENTER);
+            lbl.setTranslateY(-72);
+
+            try {
+                if (root != null) {
+                    root.getChildren().add(container);
+                }
+            } catch (Throwable ignored) {
+            }
+
+            FadeTransition fadeIn = new FadeTransition(javafx.util.Duration.seconds(FADE_SECONDS), lbl);
+            fadeIn.setFromValue(0.0);
+            fadeIn.setToValue(1.0);
+
+            PauseTransition pause = new PauseTransition(javafx.util.Duration.seconds(DURATION_SECONDS));
+
+            FadeTransition fadeOut = new FadeTransition(javafx.util.Duration.seconds(FADE_SECONDS), lbl);
+            fadeOut.setFromValue(1.0);
+            fadeOut.setToValue(0.0);
+
+            fadeOut.setOnFinished(ev -> {
+                try {
+                    root.getChildren().remove(container);
+                } catch (Throwable ignored) {
+                }
+                Platform.runLater(this::showNext);
+            });
+
+            SequentialTransition seq = new SequentialTransition(fadeIn, pause, fadeOut);
+            seq.play();
+        }
+    }
+}
