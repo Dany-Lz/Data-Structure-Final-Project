@@ -498,22 +498,35 @@ public class InventoryScreen {
                     String clsName = mapScreen != null ? mapScreen.getClass().getSimpleName() : "";
 
                     switch (clsName) {
-                        case "FieldVillage" ->
+                        case "FieldVillage" -> {
+                            h.setLastPosX(670.5704519999998);
+                            h.setLastPosY(864.0);
                             h.setLastLocation(Hero.Location.FIELD_VILLAGE);
-                        case "GameMapScreen" ->
+                        }
+                        case "GameMapScreen" ->{
+                            h.setLastPosX(682.4067800000003);
+                            h.setLastPosY(400.5119300000001);
                             h.setLastLocation(Hero.Location.MAP);
-                        case "ForestHouse" ->
+                        }
+                        case "ForestHouse" -> {
+                            h.setLastPosX(384.0);
+                            h.setLastPosY(576.0);
                             h.setLastLocation(Hero.Location.FOREST_HOUSE);
-                        case "Swamp" ->
+                        }
+                        case "Swamp" -> {
+                            h.setLastPosX(384.0);
+                            h.setLastPosY(607.059);
                             h.setLastLocation(Hero.Location.SWAMP);
-                            case "SwampDungeon" ->
+
+                        }
+                        case "SwampDungeon" -> {
+                            h.setLastPosX(500.1253860000012);
+                            h.setLastPosY(1200.0);
                             h.setLastLocation(Hero.Location.SWAMP_DUNGEON);
+                        }
                         default ->
                             h.setLastLocation(Hero.Location.MAP);
                     }
-
-                    h.setLastPosX(pos.getX());
-                    h.setLastPosY(pos.getY());
                 }
 
                 boolean saved = game.createSaveGame();
