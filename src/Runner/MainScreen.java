@@ -1,6 +1,7 @@
 package Runner;
 
 import Characters.Hero;
+import static Characters.Hero.Location.SWAMP;
 import Logic.Game;
 import GUI.*;
 import com.almasb.fxgl.app.GameApplication;
@@ -58,6 +59,7 @@ public class MainScreen extends GameApplication {
     private static final double CURSOR_UP_OFFSET = 8.0;
     private GameMapScreen currentMapScreen;
     private static final int DURACION_CARGA_MS = 600;
+    public static volatile boolean modalOpen = false;
 
     @Override
     protected void initSettings(GameSettings settings) {
@@ -69,39 +71,44 @@ public class MainScreen extends GameApplication {
     @Override
     protected void initInput() {
         FXGL.onKeyDown(KeyCode.UP, () -> {
-            if (configOpen) {
-                return;
+            boolean proceed = !MainScreen.isModalOpen() && !configOpen;
+            if (proceed) {
+                selectedIndex = (selectedIndex - 1 + labels.length) % labels.length;
+                updateCursorSmooth();
             }
-            selectedIndex = (selectedIndex - 1 + labels.length) % labels.length;
-            updateCursorSmooth();
         });
+
         FXGL.onKeyDown(KeyCode.DOWN, () -> {
-            if (configOpen) {
-                return;
+            boolean proceed = !MainScreen.isModalOpen() && !configOpen;
+            if (proceed) {
+                selectedIndex = (selectedIndex + 1) % labels.length;
+                updateCursorSmooth();
             }
-            selectedIndex = (selectedIndex + 1) % labels.length;
-            updateCursorSmooth();
         });
+
         FXGL.onKeyDown(KeyCode.ENTER, () -> {
-            if (configOpen) {
-                return;
+            boolean proceed = !MainScreen.isModalOpen() && !configOpen;
+            if (proceed) {
+                activateSelected();
             }
-            activateSelected();
         });
+
         FXGL.onKeyDown(KeyCode.W, () -> {
-            if (configOpen) {
-                return;
+            boolean proceed = !MainScreen.isModalOpen() && !configOpen;
+            if (proceed) {
+                selectedIndex = (selectedIndex - 1 + labels.length) % labels.length;
+                updateCursorSmooth();
             }
-            selectedIndex = (selectedIndex - 1 + labels.length) % labels.length;
-            updateCursorSmooth();
         });
+
         FXGL.onKeyDown(KeyCode.S, () -> {
-            if (configOpen) {
-                return;
+            boolean proceed = !MainScreen.isModalOpen() && !configOpen;
+            if (proceed) {
+                selectedIndex = (selectedIndex + 1) % labels.length;
+                updateCursorSmooth();
             }
-            selectedIndex = (selectedIndex + 1) % labels.length;
-            updateCursorSmooth();
         });
+
     }
 
     @Override
@@ -109,7 +116,8 @@ public class MainScreen extends GameApplication {
         game = new Game();
         game.createItems();
         game.createMonsters();
- 
+        game.createTasks();
+
     }
 
     @Override
@@ -543,6 +551,7 @@ public class MainScreen extends GameApplication {
                         a.showAndWait();
                         stopBackgroundMusic();
                         showLoadingThenMap();
+
                     } else {
                         a.setAlertType(Alert.AlertType.ERROR);
                         a.setTitle("No se pudo iniciar la partida");
@@ -659,6 +668,8 @@ public class MainScreen extends GameApplication {
 
                     switch (loc) {
                         case FIELD_VILLAGE -> {
+                            double x = 665.5536599999996;
+                            double y = 864.0;
                             FieldVillage field = new FieldVillage(game);
                             field.showWithLoading(() -> {
                                 Platform.runLater(() -> field.setHeroPosition(lx, ly));
@@ -676,8 +687,32 @@ public class MainScreen extends GameApplication {
                         }
                         case FOREST_HOUSE -> {
                             ForestHouse fh = new ForestHouse(game);
+                            double startX = 384.0;
+                            double startY = 576.0;
                             fh.showWithLoading(() -> {
                                 Platform.runLater(() -> fh.setHeroPosition(lx, ly));
+                            }, () -> {
+                                Platform.runLater(() -> {
+                                    currentMapScreen.show();
+                                    if (h.getLastLocation() == Hero.Location.MAP) {
+                                        currentMapScreen.setHeroPosition(startX, startY);
+                                    } else {
+                                        currentMapScreen.resetHeroToCenter();
+                                    }
+                                    currentMapScreen.drawDebugObstacles();
+                                });
+                            });
+                        }
+                        case MAP -> {
+                            currentMapScreen.setHeroPosition(lx, ly);
+                            currentMapScreen.show();
+                        }
+                        case SWAMP -> {
+                            Swamp swamp = new Swamp(game);
+                            double startX = 2352.0;
+                            double startY = 607.059;
+                            swamp.showWithLoading(() -> {
+                                Platform.runLater(() -> swamp.setHeroPosition(startX, startY));
                             }, () -> {
                                 Platform.runLater(() -> {
                                     currentMapScreen.show();
@@ -690,10 +725,25 @@ public class MainScreen extends GameApplication {
                                 });
                             });
                         }
-                        case MAP -> {
-                            currentMapScreen.setHeroPosition(lx, ly);
-                            currentMapScreen.show();
+                        case SWAMP_DUNGEON -> {
+                            SwampDungeon swamp = new SwampDungeon(game);
+                            double startX = 500.1253860000012;
+                            double startY = 1200.0;
+                            swamp.showWithLoading(() -> {
+                                Platform.runLater(() -> swamp.setHeroPosition(startX, startY));
+                            }, () -> {
+                                Platform.runLater(() -> {
+                                    currentMapScreen.show();
+                                    if (h.getLastLocation() == Hero.Location.MAP) {
+                                        currentMapScreen.setHeroPosition(h.getLastPosX(), h.getLastPosY());
+                                    } else {
+                                        currentMapScreen.resetHeroToCenter();
+                                    }
+                                    currentMapScreen.drawDebugObstacles();
+                                });
+                            });
                         }
+
                         default -> {
                             currentMapScreen.resetHeroToCenter();
                             currentMapScreen.show();
@@ -755,6 +805,14 @@ public class MainScreen extends GameApplication {
                 }
             });
         });
+    }
+
+    public static void setModalOpen(boolean open) {
+        modalOpen = open;
+    }
+
+    public static boolean isModalOpen() {
+        return modalOpen;
     }
 
     public static void main(String[] args) {

@@ -3,7 +3,11 @@ package GUI;
 import Logic.Game;
 import Characters.Hero;
 import Items.*;
+import Misc.Classes;
+import Misc.Task;
 import Runner.MainScreen;
+import Tree.BinaryTreeNode;
+import Tree.InBreadthIterator;
 import com.almasb.fxgl.dsl.FXGL;
 import javafx.animation.FadeTransition;
 import javafx.animation.PauseTransition;
@@ -26,7 +30,10 @@ import javafx.scene.text.Font;
 import javafx.util.Duration;
 
 import java.lang.reflect.Method;
+import java.util.ArrayDeque;
+import java.util.Deque;
 import java.util.LinkedList;
+import java.util.Queue;
 
 public class InventoryScreen {
 
@@ -52,7 +59,6 @@ public class InventoryScreen {
     public InventoryScreen(Game game, Object mapScreen) {
         this.game = game;
         this.mapScreen = mapScreen;
-
         root = new StackPane();
         root.setPrefSize(800, 600);
 
@@ -84,8 +90,9 @@ public class InventoryScreen {
         Tab waresTab = createWaresTab();
         Tab keyItemsTab = createKeyItemsTab();
         Tab settingsTab = createSettingsTab();
+        Tab tasksTab = createTasksTab();
 
-        tabPane.getTabs().addAll(statusTab, weaponsArmorTab, waresTab, keyItemsTab, settingsTab);
+        tabPane.getTabs().addAll(statusTab, weaponsArmorTab, waresTab, keyItemsTab, tasksTab, settingsTab);
 
         Button closeButton = new Button("Close");
         closeButton.setFont(Font.font("System Bold", 14));
@@ -272,20 +279,35 @@ public class InventoryScreen {
         grid.getChildren().addAll(armorTitle, armorValue);
         rightRow++;
 
-        Label skillTreeTitle = new Label("SKILL TREE");
-        skillTreeTitle.setStyle("-fx-font-weight: bold; -fx-font-size: 16px; -fx-text-fill: #aaddff;");
-        GridPane.setConstraints(skillTreeTitle, 0, 6, 2, 1);
-        grid.getChildren().add(skillTreeTitle);
+        Label levelProgressTitle = new Label("LEVEL PROGRESSION");
+        levelProgressTitle.setStyle("-fx-font-weight: bold; -fx-font-size: 16px; -fx-text-fill: #aaddff;");
+        GridPane.setConstraints(levelProgressTitle, 0, 6, 2, 1);
+        grid.getChildren().add(levelProgressTitle);
 
-        TextArea skillTreeArea = new TextArea();
-        skillTreeArea.setEditable(false);
-        skillTreeArea.setPrefRowCount(6);
-        skillTreeArea.setPrefColumnCount(50);
-        skillTreeArea.setWrapText(true);
-        skillTreeArea.setText(getSkillTreeAsString());
-        skillTreeArea.setStyle("-fx-control-inner-background: #0a0a14; -fx-text-fill: #aaddff; -fx-font-family: 'Consolas', monospace; -fx-font-size: 12px; -fx-border-color: #333344;");
-        GridPane.setConstraints(skillTreeArea, 0, 7, 4, 2);
-        grid.getChildren().add(skillTreeArea);
+        TextArea levelProgressArea = new TextArea();
+        levelProgressArea.setEditable(false);
+        levelProgressArea.setPrefRowCount(6);
+        levelProgressArea.setPrefColumnCount(50);
+        levelProgressArea.setWrapText(true);
+        levelProgressArea.setStyle("-fx-control-inner-background: #0a0a14; -fx-text-fill: #aaddff; "
+                + "-fx-font-family: 'Consolas', monospace; -fx-font-size: 12px; -fx-border-color: #333344;");
+
+        StringBuilder sb = new StringBuilder();
+        sb.append("Current Level: ").append(hero.getLevel()).append("\n");
+        sb.append("Experience: ").append(hero.getExpActual()).append(" / ").append(hero.getExpMax()).append("\n\n");
+        sb.append("Unlocked Classes:\n");
+
+        InBreadthIterator<Classes> it = hero.getUnlockedClasses().inBreadthIterator();
+        while (it.hasNext()) {
+            BinaryTreeNode<Classes> node = it.nextNode();
+            Classes cl = node.getInfo();
+            sb.append("- ").append(cl.getId()).append(" : ").append(cl.getDescription()).append("\n");
+        }
+
+        levelProgressArea.setText(sb.toString());
+
+        GridPane.setConstraints(levelProgressArea, 0, 7, 4, 2);
+        grid.getChildren().add(levelProgressArea);
 
         scrollPane.setContent(grid);
         tab.setContent(scrollPane);
@@ -430,24 +452,135 @@ public class InventoryScreen {
         return tab;
     }
 
+    //---------------------Task Tab----------------------------
+    private HBox createTaskRow(String title, String details) {
+        HBox row = new HBox(15);
+        row.setPadding(new Insets(8, 15, 8, 15));
+        row.setAlignment(Pos.CENTER_LEFT);
+        row.setStyle("-fx-background-color: rgba(255, 255, 255, 0.05); -fx-background-radius: 5; -fx-border-color: rgba(255, 255, 255, 0.1); -fx-border-radius: 5;");
+
+        Label nameLabel = new Label(title);
+        nameLabel.setStyle("-fx-font-weight: bold; -fx-font-size: 14px; -fx-text-fill: white;");
+        nameLabel.setMinWidth(220);
+
+        Label detailsLabel = new Label(details);
+        detailsLabel.setStyle("-fx-font-size: 12px; -fx-text-fill: #aaaaaa;");
+        detailsLabel.setWrapText(true);
+        detailsLabel.setMaxWidth(380);
+
+        Region spacer = new Region();
+        HBox.setHgrow(spacer, Priority.ALWAYS);
+
+        row.getChildren().addAll(nameLabel, detailsLabel, spacer);
+        return row;
+    }
+
+    private Tab createTasksTab() {
+        Tab tab = new Tab("Tasks");
+        tab.setStyle("-fx-font-weight: bold;");
+
+        ScrollPane scrollPane = new ScrollPane();
+        scrollPane.setFitToWidth(true);
+        scrollPane.setPrefViewportHeight(400);
+        scrollPane.setStyle("-fx-background: transparent; -fx-background-color: transparent;");
+
+        VBox content = new VBox(12);
+        content.setPadding(new Insets(20));
+        content.setStyle("-fx-background-color: transparent;");
+
+        Hero hero = game.getHero();
+
+        Label pendingTitle = new Label("PENDING TASKS");
+        pendingTitle.setStyle("-fx-font-size: 18px; -fx-font-weight: bold; -fx-text-fill: #ffaa44;");
+        pendingTitle.setPadding(new Insets(0, 0, 6, 0));
+
+        VBox pendingList = new VBox(6);
+        if (hero.getTasks().isEmpty()) {
+            Label none = new Label("No pending tasks.");
+            none.setStyle("-fx-text-fill: #888888; -fx-font-style: italic;");
+            pendingList.getChildren().add(none);
+        } else {
+            Queue<Task> aux = new ArrayDeque<>();
+            while (!hero.getTasks().isEmpty()) {
+                Task t = hero.getTasks().poll();
+                String name = t.getName();
+                String info = t.getInfo();
+                HBox row = createTaskRow(name, info);
+                pendingList.getChildren().add(row);
+                aux.offer(t);
+            }
+            while (!aux.isEmpty()) {
+                hero.getTasks().offer(aux.poll());
+            }
+        }
+
+        Label completedTitle = new Label("COMPLETED TASKS");
+        completedTitle.setStyle("-fx-font-size: 18px; -fx-font-weight: bold; -fx-text-fill: #44aaff;");
+        completedTitle.setPadding(new Insets(12, 0, 6, 0));
+
+        VBox completedList = new VBox(6);
+        if (hero == null || hero.getCompletedTasks() == null || hero.getCompletedTasks().isEmpty()) {
+            Label none = new Label("No completed tasks.");
+            none.setStyle("-fx-text-fill: #888888; -fx-font-style: italic;");
+            completedList.getChildren().add(none);
+        } else {
+            Deque<Task> aux = new ArrayDeque<>();
+            while (!hero.getCompletedTasks().isEmpty()) {
+                Task t = hero.getCompletedTasks().pop();
+                String name = t.getName();
+                String info = t.getInfo();
+                HBox row = createTaskRow(name, info);
+                row.setStyle("-fx-background-color: rgba(68, 170, 255, 0.06); -fx-background-radius: 5; -fx-border-color: rgba(255,255,255,0.04);");
+                completedList.getChildren().add(row);
+                aux.push(t);
+            }
+            while (!aux.isEmpty()) {
+                hero.getCompletedTasks().push(aux.pop());
+            }
+        }
+
+        content.getChildren().addAll(pendingTitle, pendingList, completedTitle, completedList);
+        scrollPane.setContent(content);
+        tab.setContent(scrollPane);
+        return tab;
+    }
+
     // -------------------- KEY ITEMS TAB --------------------
     private Tab createKeyItemsTab() {
         Tab tab = new Tab("Key Items");
         tab.setStyle("-fx-font-weight: bold;");
 
-        VBox content = new VBox(20);
-        content.setPadding(new Insets(40));
-        content.setAlignment(Pos.CENTER);
+        ScrollPane scrollPane = new ScrollPane();
+        scrollPane.setFitToWidth(true);
+        scrollPane.setPrefViewportHeight(400);
+        scrollPane.setStyle("-fx-background: transparent; -fx-background-color: transparent;");
+
+        VBox content = new VBox(10);
+        content.setPadding(new Insets(20));
         content.setStyle("-fx-background-color: transparent;");
 
-        Label label = new Label("KEY ITEMS");
-        label.setStyle("-fx-font-size: 20px; -fx-font-weight: bold; -fx-text-fill: #ff44ff;");
+        Label keyTitle = new Label("KEY ITEMS");
+        keyTitle.setStyle("-fx-font-size: 18px; -fx-font-weight: bold; -fx-text-fill: #ff44ff;");
+        keyTitle.setPadding(new Insets(0, 0, 10, 0));
 
-        Label message = new Label("No key items at the moment.");
-        message.setStyle("-fx-font-size: 14px; -fx-text-fill: #aaaaaa; -fx-font-style: italic;");
+        VBox keyList = new VBox(5);
+        keyList.setStyle("-fx-background-color: transparent;");
 
-        content.getChildren().addAll(label, message);
-        tab.setContent(content);
+        Hero hero = game.getHero();
+        for (KeyItem k : game.getHeroKeyItems()) {
+            HBox row = createItemRow(k.getName(), "ID: " + k.getId() + " | " + k.getInfo(), false);
+            keyList.getChildren().add(row);
+        }
+
+        if (keyList.getChildren().isEmpty()) {
+            Label noKeys = new Label("No key items at the moment.");
+            noKeys.setStyle("-fx-text-fill: #888888; -fx-font-style: italic;");
+            keyList.getChildren().add(noKeys);
+        }
+
+        content.getChildren().addAll(keyTitle, keyList);
+        scrollPane.setContent(content);
+        tab.setContent(scrollPane);
         return tab;
     }
 
@@ -480,18 +613,50 @@ public class InventoryScreen {
                     String clsName = mapScreen != null ? mapScreen.getClass().getSimpleName() : "";
 
                     switch (clsName) {
-                        case "FieldVillage" ->
+                        case "FieldVillage" -> {
+                            h.setLastPosX(670.5704519999998);
+                            h.setLastPosY(864.0);
                             h.setLastLocation(Hero.Location.FIELD_VILLAGE);
-                        case "GameMapScreen" ->
+                        }
+                        case "JVInn" -> {
+                            h.setLastPosX(670.5704519999998);
+                            h.setLastPosY(864.0);
+                            h.setLastLocation(Hero.Location.FIELD_VILLAGE);
+                        }
+                        case "JVMayor" -> {
+                            h.setLastPosX(670.5704519999998);
+                            h.setLastPosY(864.0);
+                            h.setLastLocation(Hero.Location.FIELD_VILLAGE);
+                        }
+                        case "JVStore" -> {
+                            h.setLastPosX(670.5704519999998);
+                            h.setLastPosY(864.0);
+                            h.setLastLocation(Hero.Location.FIELD_VILLAGE);
+                        }
+                        case "GameMapScreen" -> {
+                            h.setLastPosX(682.4067800000003);
+                            h.setLastPosY(400.5119300000001);
                             h.setLastLocation(Hero.Location.MAP);
-                        case "ForestHouse" ->
+                        }
+                        case "ForestHouse" -> {
+                            h.setLastPosX(384.0);
+                            h.setLastPosY(576.0);
                             h.setLastLocation(Hero.Location.FOREST_HOUSE);
+                        }
+                        case "Swamp" -> {
+                            h.setLastPosX(384.0);
+                            h.setLastPosY(607.059);
+                            h.setLastLocation(Hero.Location.SWAMP);
+
+                        }
+                        case "SwampDungeon" -> {
+                            h.setLastPosX(500.1253860000012);
+                            h.setLastPosY(1200.0);
+                            h.setLastLocation(Hero.Location.SWAMP_DUNGEON);
+                        }
                         default ->
                             h.setLastLocation(Hero.Location.MAP);
                     }
-
-                    h.setLastPosX(pos.getX());
-                    h.setLastPosY(pos.getY());
                 }
 
                 boolean saved = game.createSaveGame();
@@ -620,7 +785,7 @@ public class InventoryScreen {
                 FXGL.getGameScene().clearUINodes();
             } catch (Throwable ignored) {
             }
-
+            close();
             MainScreen.restoreMenuAndMusic();
         });
 
@@ -714,109 +879,140 @@ public class InventoryScreen {
         this.onClose = onClose;
     }
 
-    public void show() {
-        isVisible = true;
-
-        FXGL.getGameScene().addUINode(root);
-
-        try {
-            AudioManager.pauseAll();
-        } catch (Throwable ignored) {
-        }
-
-        try {
-            sceneRootRef = FXGL.getGameScene().getRoot();
-            if (sceneRootRef != null) {
-                sceneKeyFilter = ev -> {
-                    Object tgt = ev.getTarget();
-                    if (tgt instanceof Node && !isNodeDescendantOfRoot((Node) tgt)) {
-                        ev.consume();
-                    }
-                };
-                sceneMouseFilter = ev -> {
-                    Object tgt = ev.getTarget();
-                    if (tgt instanceof Node && !isNodeDescendantOfRoot((Node) tgt)) {
-                        ev.consume();
-                    }
-                };
-                sceneRootRef.addEventFilter(KeyEvent.ANY, sceneKeyFilter);
-                sceneRootRef.addEventFilter(MouseEvent.ANY, sceneMouseFilter);
+    // Helper: comprueba si 'node' está dentro del árbol de 'ancestor'
+    private boolean isDescendant(Node node, Parent ancestor) {
+        boolean result = false;
+        Node cur = node;
+        while (cur != null) {
+            if (cur == ancestor) {
+                result = true;
+                break;
             }
-        } catch (Throwable ignored) {
+            cur = cur.getParent();
         }
+        return result;
+    }
 
-        Platform.runLater(() -> root.requestFocus());
+    public void show() {
+        Platform.runLater(() -> {
+            MainScreen.setModalOpen(true);
+
+            try {
+                sceneRootRef = FXGL.getGameScene().getRoot();
+
+                sceneKeyFilter = (EventHandler<KeyEvent>) ev -> {
+                    Node targetNode = (ev.getTarget() instanceof Node) ? (Node) ev.getTarget() : null;
+                    boolean insideInventory = false;
+                    if (targetNode != null) {
+                        insideInventory = isDescendant(targetNode, root);
+                    }
+                    if (!insideInventory) {
+                        ev.consume();
+                    }
+                };
+
+                sceneMouseFilter = (EventHandler<MouseEvent>) ev -> {
+                    Node targetNode = (ev.getTarget() instanceof Node) ? (Node) ev.getTarget() : null;
+                    boolean insideInventory = false;
+                    if (targetNode != null) {
+                        insideInventory = isDescendant(targetNode, root);
+                    }
+                    if (!insideInventory) {
+                        ev.consume();
+                    }
+                };
+
+                if (sceneRootRef != null) {
+                    try {
+                        sceneRootRef.addEventFilter(KeyEvent.ANY, sceneKeyFilter);
+                    } catch (Throwable ignored) {
+                    }
+                    try {
+                        sceneRootRef.addEventFilter(MouseEvent.ANY, sceneMouseFilter);
+                    } catch (Throwable ignored) {
+                    }
+                }
+
+                try {
+                    FXGL.getGameScene().addUINode(root);
+                } catch (Throwable ignored) {
+                }
+
+                root.setFocusTraversable(true);
+                root.requestFocus();
+                isVisible = true;
+
+                root.addEventFilter(KeyEvent.KEY_PRESSED, ev -> {
+                    switch (ev.getCode()) {
+                        case ESCAPE:
+                            ev.consume();
+                            close();
+                            break;
+                        default:
+                            break;
+                    }
+                });
+
+            } catch (Throwable ignored) {
+                MainScreen.setModalOpen(false);
+            }
+        });
     }
 
     public void close() {
-        isVisible = false;
+        Platform.runLater(() -> {
+            try {
+                // Intentar quitar el UI del inventario
+                try {
+                    FXGL.getGameScene().removeUINode(root);
+                } catch (Throwable ignored) {
+                }
 
-        try {
-            Parent currentRoot = FXGL.getGameScene().getRoot();
-            if (sceneRootRef != null) {
-                try {
-                    sceneRootRef.removeEventFilter(KeyEvent.ANY, sceneKeyFilter);
-                } catch (Throwable ignored) {
-                }
-                try {
-                    sceneRootRef.removeEventFilter(MouseEvent.ANY, sceneMouseFilter);
-                } catch (Throwable ignored) {
-                }
-            }
-            if (currentRoot != null && currentRoot != sceneRootRef) {
-                try {
-                    currentRoot.removeEventFilter(KeyEvent.ANY, sceneKeyFilter);
-                } catch (Throwable ignored) {
-                }
-                try {
-                    currentRoot.removeEventFilter(MouseEvent.ANY, sceneMouseFilter);
-                } catch (Throwable ignored) {
-                }
-            }
-        } catch (Throwable ignored) {
-        } finally {
-            sceneKeyFilter = null;
-            sceneMouseFilter = null;
-            sceneRootRef = null;
-        }
-
-        try {
-            FXGL.getGameScene().removeUINode(root);
-        } catch (Throwable ignored) {
-        }
-        try {
-            AudioManager.resumeAll();
-        } catch (Throwable ignored) {
-        }
-
-        try {
-            if (mapScreen != null) {
-                try {
-                    Method m = mapScreen.getClass().getMethod("getRoot");
-                    Object r = m.invoke(mapScreen);
-                    if (r instanceof Node) {
-                        Platform.runLater(() -> ((Node) r).requestFocus());
-                    }
-                } catch (NoSuchMethodException nsme) {
+                // Intentar quitar filtros desde la raíz donde se añadieron
+                if (sceneRootRef != null) {
                     try {
-                        Method m2 = mapScreen.getClass().getMethod("requestFocus");
-                        m2.invoke(mapScreen);
+                        sceneRootRef.removeEventFilter(KeyEvent.ANY, sceneKeyFilter);
                     } catch (Throwable ignored) {
                     }
+                    try {
+                        sceneRootRef.removeEventFilter(MouseEvent.ANY, sceneMouseFilter);
+                    } catch (Throwable ignored) {
+                    }
+                }
+
+                Parent currentRoot = null;
+                try {
+                    currentRoot = FXGL.getGameScene().getRoot();
                 } catch (Throwable ignored) {
                 }
-            } else {
-                Parent sceneRoot = FXGL.getGameScene().getRoot();
-                if (sceneRoot != null) {
-                    Platform.runLater(sceneRoot::requestFocus);
+                if (currentRoot != null && currentRoot != sceneRootRef) {
+                    try {
+                        currentRoot.removeEventFilter(KeyEvent.ANY, sceneKeyFilter);
+                    } catch (Throwable ignored) {
+                    }
+                    try {
+                        currentRoot.removeEventFilter(MouseEvent.ANY, sceneMouseFilter);
+                    } catch (Throwable ignored) {
+                    }
+                }
+
+                sceneKeyFilter = null;
+                sceneMouseFilter = null;
+                sceneRootRef = null;
+
+            } catch (Throwable ignored) {
+            } finally {
+                // Asegurar que el flag se desactive y ejecutar onClose
+                MainScreen.setModalOpen(false);
+                isVisible = false;
+                if (onClose != null) {
+                    try {
+                        onClose.run();
+                    } catch (Throwable ignored) {
+                    }
                 }
             }
-        } catch (Throwable ignored) {
-        }
-
-        if (onClose != null) {
-            onClose.run();
-        }
+        });
     }
 
     public void toggle() {
@@ -923,9 +1119,10 @@ public class InventoryScreen {
             Tab weaponsArmor = createWeaponsArmorTab();
             Tab wares = createWaresTab();
             Tab keyItems = createKeyItemsTab();
+            Tab tasks = createTasksTab();
             Tab settings = createSettingsTab();
 
-            tabPane.getTabs().setAll(status, weaponsArmor, wares, keyItems, settings);
+            tabPane.getTabs().setAll(status, weaponsArmor, wares, keyItems, tasks, settings);
 
             if (selectedIndex >= 0 && selectedIndex < tabPane.getTabs().size()) {
                 tabPane.getSelectionModel().select(selectedIndex);
@@ -936,4 +1133,5 @@ public class InventoryScreen {
             Platform.runLater(() -> root.requestFocus());
         });
     }
+
 }

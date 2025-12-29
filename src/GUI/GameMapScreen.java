@@ -2,7 +2,10 @@ package GUI;
 
 import Runner.MainScreen;
 import Characters.Hero;
+import GUI.Swamp;
 import Logic.Game;
+import Misc.Classes;
+import Tree.InBreadthIterator;
 import com.almasb.fxgl.dsl.FXGL;
 import javafx.animation.AnimationTimer;
 import javafx.application.Platform;
@@ -25,7 +28,6 @@ import javafx.scene.media.MediaPlayer;
 import javafx.scene.transform.Scale;
 import javafx.scene.shape.Rectangle;
 import javafx.scene.paint.Color;
-import javafx.scene.text.Text;
 import java.net.URL;
 import java.util.ArrayList;
 import java.util.List;
@@ -317,6 +319,15 @@ public class GameMapScreen {
                 left = true;
             } else if (k == KeyCode.D || k == KeyCode.RIGHT) {
                 right = true;
+            } else if (k == KeyCode.L) {
+                enterDebugSwamp();
+            }
+            else if (k == KeyCode.Q) {
+                InBreadthIterator<Classes> it = game.getHero().getUnlockedClasses().inBreadthIterator();
+                while(it.hasNext()){
+                    System.out.println(it.nextNode().getInfo().getClass().getSimpleName());
+                    
+                }
             }
 
             if (handled) {
@@ -864,6 +875,39 @@ public class GameMapScreen {
         }
     }
 
+    private void enterDebugSwamp() {
+        final Point2D savedHeroTopLeft = getHeroMapTopLeft();
+
+        clearInputState();
+
+        stopMapMusic();
+        try {
+            FXGL.getGameScene().removeUINode(root);
+        } catch (Throwable ignored) {
+        }
+
+        Swamp swamp = new Swamp(game);
+        swamp.showWithLoading(null, () -> {
+            Platform.runLater(() -> {
+                MainScreen.hideMenu();
+                startMapMusic();
+                try {
+                    FXGL.getGameScene().addUINode(root);
+                } catch (Throwable ignored) {
+                }
+                heroView.setLayoutX(savedHeroTopLeft.getX());
+                heroView.setLayoutY(savedHeroTopLeft.getY());
+                if (debugEnabled) {
+                    drawDebugObstacles();
+                }
+                root.requestFocus();
+                clearInputState();
+                mover.start();
+            });
+        });
+
+    }
+
     public void setHeroPosition(double x, double y) {
         if (heroView != null) {
             double hw = heroView.getBoundsInLocal().getWidth();
@@ -887,7 +931,7 @@ public class GameMapScreen {
         String bg = "/Resources/textures/Battle/fieldBattle.png";
         stopMapMusic();
 
-        GUI.CombatScreen cs = new GUI.CombatScreen(game, bg, "Overworld", game.getHero());
+        GUI.CombatScreen cs = new GUI.CombatScreen(game, bg, "Overworld", game.getHero(), false, null);
 
         cs.setBattleMusicPath(combatMusicPath);
         //cs.setBattleMusicPath("/Resources/music/bossBattle2.mp3");
