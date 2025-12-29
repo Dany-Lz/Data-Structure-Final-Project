@@ -275,6 +275,7 @@ public class InventoryScreen {
         grid.getChildren().addAll(armorTitle, armorValue);
         rightRow++;
 
+
         Label levelProgressTitle = new Label("LEVEL PROGRESSION");
         levelProgressTitle.setStyle("-fx-font-weight: bold; -fx-font-size: 16px; -fx-text-fill: #aaddff;");
         GridPane.setConstraints(levelProgressTitle, 0, 6, 2, 1);
@@ -288,6 +289,7 @@ public class InventoryScreen {
         levelProgressArea.setStyle("-fx-control-inner-background: #0a0a14; -fx-text-fill: #aaddff; "
                 + "-fx-font-family: 'Consolas', monospace; -fx-font-size: 12px; -fx-border-color: #333344;");
 
+       
         StringBuilder sb = new StringBuilder();
         sb.append("Current Level: ").append(hero.getLevel()).append("\n");
         sb.append("Experience: ").append(hero.getExpActual()).append(" / ").append(hero.getExpMax()).append("\n\n");

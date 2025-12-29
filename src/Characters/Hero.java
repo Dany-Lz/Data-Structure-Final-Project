@@ -59,8 +59,10 @@ public class Hero implements Serializable {
         setMoney(50);
         items = new LinkedList<>();
         actualWeapon = weapon;
+        
         BinaryTreeNode<Classes> heroRoot = new BinaryTreeNode<>(root);
         unlockedClasses = new GeneralTree<>(heroRoot);
+
         tasks = new ArrayDeque<>();
         completedTasks = new ArrayDeque<>();
         loadFxImage();

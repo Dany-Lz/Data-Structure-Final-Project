@@ -10,10 +10,7 @@ import java.io.File;
 import java.io.IOException;
 import java.io.RandomAccessFile;
 import java.time.LocalDateTime;
-import java.util.ArrayDeque;
 import java.util.ArrayList;
-import java.util.Iterator;
-import java.util.Queue;
 
 public class Game {
 
@@ -31,7 +28,9 @@ public class Game {
     }
 
     public void createHero(String name) {
+
         Classes root = ((BinaryTreeNode<Classes>) classes.getRoot()).getInfo();
+
         hero = new Hero(name, (Weapon) items.get(0), (Armor) items.get(8), root);
         // Para testear el inventario 
         hero.getItems().addLast(items.get(1));
@@ -336,7 +335,7 @@ public class Game {
         }
         return cured;
     }
-
+    
     public void createItems() {
         //Weapons
         items.add(new Fist("Your hands, it is the easiest way to attack!", "Bare Hands", "H000", 5, 120000, "Inflicts damage.", -1));
