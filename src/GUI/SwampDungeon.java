@@ -3,6 +3,7 @@ package GUI;
 import Characters.Boss;
 import Characters.Hero;
 import Logic.Game;
+import Misc.Task;
 import Runner.MainScreen;
 import com.almasb.fxgl.dsl.FXGL;
 import java.net.URL;
@@ -48,6 +49,9 @@ public class SwampDungeon {
     private final double HERO_SPEED = 180.0;
     private final Set<KeyCode> keys = new HashSet<>();
     private AnimationTimer mover;
+    private Rectangle orbNode = null;
+    private Rectangle2D orbTrigger = null;
+    private Text orbHintText = null;
 
     private final double VIEW_W = 800;
     private final double VIEW_H = 600;
@@ -834,12 +838,21 @@ public class SwampDungeon {
                 } else {
                     world.getChildren().removeIf(n -> "obstacle_debug".equals(n.getProperties().get("tag")));
                 }
+                for (Task t : game.getHero().getCompletedTasks()) {
+                    System.out.print(t.getName());
+
+                }
             }
 
             if (k == KeyCode.ENTER) {
                 if (bossView != null) {
                     checkBossTriggers();
                 }
+                if (checkOrbTrigger()) {
+                    game.completeMainM001();
+                    collectOrb();
+                }
+
                 if (beforeDungeon) {
                     checkDungeonTriggers();
 
@@ -1251,8 +1264,100 @@ public class SwampDungeon {
         heroView.toFront();
     }
 
-    // Para Cambiar la Imagen y borrar Colisiones
-    private void createDungeonTriggerRects() {
+    public void createOrbTrigger() {
+        if (game.getHero().existsCompletedTask(game.searchTask("M001"))) {
+            if (orbNode != null) {
+                try {
+                    world.getChildren().remove(orbNode);
+                } catch (Throwable ignored) {
+                }
+                orbNode = null;
+            }
+            orbTrigger = null;
+        } else {
+            double x = 573.1055639999997;
+            double y = 222.56532000000004;
+            orbTrigger = new Rectangle2D(x - 4, y - 4, HERO_W + 8, HERO_H + 8);
+            if (orbNode == null) {
+                Rectangle r = new Rectangle(orbTrigger.getWidth(), orbTrigger.getHeight());
+                r.setLayoutX(orbTrigger.getMinX());
+                r.setLayoutY(orbTrigger.getMinY());
+                r.setFill(Color.TRANSPARENT);
+                r.setStroke(null);
+                r.setMouseTransparent(true);
+                orbNode = r;
+                if (!world.getChildren().contains(orbNode)) {
+                    world.getChildren().add(orbNode);
+                }
+                orbNode.toFront();
+                heroView.toFront();
+
+            } else {
+                orbNode.setLayoutX(orbTrigger.getMinX());
+                orbNode.setLayoutY(orbTrigger.getMinY());
+            }
+        }
+    }
+
+    public boolean checkOrbTrigger() {
+        boolean intersects = false;
+        if (orbTrigger != null) {
+            Rectangle2D heroRect = new Rectangle2D(heroView.getLayoutX(), heroView.getLayoutY(), HERO_W, HERO_H);
+            intersects = heroRect.intersects(orbTrigger);
+            if (intersects) {
+                if (orbHintText == null) {
+                    orbHintText = new Text("Press ENTER to pick up");
+                    orbHintText.setStyle("-fx-font-size: 12px; -fx-fill: #fffacd; -fx-stroke: #00000055;");
+                    orbHintText.setMouseTransparent(true);
+                    world.getChildren().add(orbHintText);
+                }
+                orbHintText.setLayoutX(heroView.getLayoutX());
+                orbHintText.setLayoutY(heroView.getLayoutY() - 10);
+                if (!world.getChildren().contains(orbHintText)) {
+                    world.getChildren().add(orbHintText);
+                }
+                orbHintText.toFront();
+                heroView.toFront();
+            } else {
+                if (orbHintText != null) {
+                    try {
+                        world.getChildren().remove(orbHintText);
+                    } catch (Throwable ignored) {
+                    }
+                    orbHintText = null;
+                }
+            }
+        } else {
+            if (orbHintText != null) {
+                try {
+                    world.getChildren().remove(orbHintText);
+                } catch (Throwable ignored) {
+                }
+                orbHintText = null;
+            }
+        }
+        return intersects;
+    }
+
+    public void collectOrb() {
+        if (orbNode != null) {
+            try {
+                world.getChildren().remove(orbNode);
+            } catch (Throwable ignored) {
+            }
+            orbNode = null;
+        }
+        orbTrigger = null;
+        if (orbHintText != null) {
+            try {
+                world.getChildren().remove(orbHintText);
+            } catch (Throwable ignored) {
+            }
+            orbHintText = null;
+        }
+    }
+
+    private void createDungeonTriggerRects() {  // Este metodo para crear las colisiones para avanzar hacia la otra habitacion en la primera sala
         for (Rectangle r : dungeonTriggerRects) {
             try {
                 world.getChildren().remove(r);
@@ -1320,6 +1425,7 @@ public class SwampDungeon {
             }
 
             boolean bgOk = loadBackgroundImage("/Resources/textures/SwampDungeon/SwampDungeon02.png");
+            createOrbTrigger();
             drawBossDungeon();
             setHeroPosition(382.9433579999997, 1126.7086680000002);
 
@@ -1378,7 +1484,8 @@ public class SwampDungeon {
             obstacles.clear();
             populateSwampObstacles();
             createDungeonTriggerRects();
-
+            orbTrigger = null;
+            orbNode = null;
             createStartRectAtHeroStart();
 
             heroView.toFront();
