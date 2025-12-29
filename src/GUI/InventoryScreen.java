@@ -4,6 +4,7 @@ import Logic.Game;
 import Characters.Hero;
 import Items.*;
 import Misc.Classes;
+import Misc.Task;
 import Runner.MainScreen;
 import Tree.BinaryTreeNode;
 import Tree.InBreadthIterator;
@@ -29,7 +30,10 @@ import javafx.scene.text.Font;
 import javafx.util.Duration;
 
 import java.lang.reflect.Method;
+import java.util.ArrayDeque;
+import java.util.Deque;
 import java.util.LinkedList;
+import java.util.Queue;
 
 public class InventoryScreen {
 
@@ -86,8 +90,9 @@ public class InventoryScreen {
         Tab waresTab = createWaresTab();
         Tab keyItemsTab = createKeyItemsTab();
         Tab settingsTab = createSettingsTab();
+        Tab tasksTab = createTasksTab();
 
-        tabPane.getTabs().addAll(statusTab, weaponsArmorTab, waresTab, keyItemsTab, settingsTab);
+        tabPane.getTabs().addAll(statusTab, weaponsArmorTab, waresTab, keyItemsTab, tasksTab, settingsTab);
 
         Button closeButton = new Button("Close");
         closeButton.setFont(Font.font("System Bold", 14));
@@ -447,24 +452,135 @@ public class InventoryScreen {
         return tab;
     }
 
+    //---------------------Task Tab----------------------------
+    private HBox createTaskRow(String title, String details) {
+        HBox row = new HBox(15);
+        row.setPadding(new Insets(8, 15, 8, 15));
+        row.setAlignment(Pos.CENTER_LEFT);
+        row.setStyle("-fx-background-color: rgba(255, 255, 255, 0.05); -fx-background-radius: 5; -fx-border-color: rgba(255, 255, 255, 0.1); -fx-border-radius: 5;");
+
+        Label nameLabel = new Label(title);
+        nameLabel.setStyle("-fx-font-weight: bold; -fx-font-size: 14px; -fx-text-fill: white;");
+        nameLabel.setMinWidth(220);
+
+        Label detailsLabel = new Label(details);
+        detailsLabel.setStyle("-fx-font-size: 12px; -fx-text-fill: #aaaaaa;");
+        detailsLabel.setWrapText(true);
+        detailsLabel.setMaxWidth(380);
+
+        Region spacer = new Region();
+        HBox.setHgrow(spacer, Priority.ALWAYS);
+
+        row.getChildren().addAll(nameLabel, detailsLabel, spacer);
+        return row;
+    }
+
+    private Tab createTasksTab() {
+        Tab tab = new Tab("Tasks");
+        tab.setStyle("-fx-font-weight: bold;");
+
+        ScrollPane scrollPane = new ScrollPane();
+        scrollPane.setFitToWidth(true);
+        scrollPane.setPrefViewportHeight(400);
+        scrollPane.setStyle("-fx-background: transparent; -fx-background-color: transparent;");
+
+        VBox content = new VBox(12);
+        content.setPadding(new Insets(20));
+        content.setStyle("-fx-background-color: transparent;");
+
+        Hero hero = game.getHero();
+
+        Label pendingTitle = new Label("PENDING TASKS");
+        pendingTitle.setStyle("-fx-font-size: 18px; -fx-font-weight: bold; -fx-text-fill: #ffaa44;");
+        pendingTitle.setPadding(new Insets(0, 0, 6, 0));
+
+        VBox pendingList = new VBox(6);
+        if (hero.getTasks().isEmpty()) {
+            Label none = new Label("No pending tasks.");
+            none.setStyle("-fx-text-fill: #888888; -fx-font-style: italic;");
+            pendingList.getChildren().add(none);
+        } else {
+            Queue<Task> aux = new ArrayDeque<>();
+            while (!hero.getTasks().isEmpty()) {
+                Task t = hero.getTasks().poll();
+                String name = t.getName();
+                String info = t.getInfo();
+                HBox row = createTaskRow(name, info);
+                pendingList.getChildren().add(row);
+                aux.offer(t);
+            }
+            while (!aux.isEmpty()) {
+                hero.getTasks().offer(aux.poll());
+            }
+        }
+
+        Label completedTitle = new Label("COMPLETED TASKS");
+        completedTitle.setStyle("-fx-font-size: 18px; -fx-font-weight: bold; -fx-text-fill: #44aaff;");
+        completedTitle.setPadding(new Insets(12, 0, 6, 0));
+
+        VBox completedList = new VBox(6);
+        if (hero == null || hero.getCompletedTasks() == null || hero.getCompletedTasks().isEmpty()) {
+            Label none = new Label("No completed tasks.");
+            none.setStyle("-fx-text-fill: #888888; -fx-font-style: italic;");
+            completedList.getChildren().add(none);
+        } else {
+            Deque<Task> aux = new ArrayDeque<>();
+            while (!hero.getCompletedTasks().isEmpty()) {
+                Task t = hero.getCompletedTasks().pop();
+                String name = t.getName();
+                String info = t.getInfo();
+                HBox row = createTaskRow(name, info);
+                row.setStyle("-fx-background-color: rgba(68, 170, 255, 0.06); -fx-background-radius: 5; -fx-border-color: rgba(255,255,255,0.04);");
+                completedList.getChildren().add(row);
+                aux.push(t);
+            }
+            while (!aux.isEmpty()) {
+                hero.getCompletedTasks().push(aux.pop());
+            }
+        }
+
+        content.getChildren().addAll(pendingTitle, pendingList, completedTitle, completedList);
+        scrollPane.setContent(content);
+        tab.setContent(scrollPane);
+        return tab;
+    }
+
     // -------------------- KEY ITEMS TAB --------------------
     private Tab createKeyItemsTab() {
         Tab tab = new Tab("Key Items");
         tab.setStyle("-fx-font-weight: bold;");
 
-        VBox content = new VBox(20);
-        content.setPadding(new Insets(40));
-        content.setAlignment(Pos.CENTER);
+        ScrollPane scrollPane = new ScrollPane();
+        scrollPane.setFitToWidth(true);
+        scrollPane.setPrefViewportHeight(400);
+        scrollPane.setStyle("-fx-background: transparent; -fx-background-color: transparent;");
+
+        VBox content = new VBox(10);
+        content.setPadding(new Insets(20));
         content.setStyle("-fx-background-color: transparent;");
 
-        Label label = new Label("KEY ITEMS");
-        label.setStyle("-fx-font-size: 20px; -fx-font-weight: bold; -fx-text-fill: #ff44ff;");
+        Label keyTitle = new Label("KEY ITEMS");
+        keyTitle.setStyle("-fx-font-size: 18px; -fx-font-weight: bold; -fx-text-fill: #ff44ff;");
+        keyTitle.setPadding(new Insets(0, 0, 10, 0));
 
-        Label message = new Label("No key items at the moment.");
-        message.setStyle("-fx-font-size: 14px; -fx-text-fill: #aaaaaa; -fx-font-style: italic;");
+        VBox keyList = new VBox(5);
+        keyList.setStyle("-fx-background-color: transparent;");
 
-        content.getChildren().addAll(label, message);
-        tab.setContent(content);
+        Hero hero = game.getHero();
+        for (KeyItem k : game.getHeroKeyItems()) {
+            HBox row = createItemRow(k.getName(), "ID: " + k.getId() + " | " + k.getInfo(), false);
+            keyList.getChildren().add(row);
+        }
+
+        if (keyList.getChildren().isEmpty()) {
+            Label noKeys = new Label("No key items at the moment.");
+            noKeys.setStyle("-fx-text-fill: #888888; -fx-font-style: italic;");
+            keyList.getChildren().add(noKeys);
+        }
+
+        content.getChildren().addAll(keyTitle, keyList);
+        scrollPane.setContent(content);
+        tab.setContent(scrollPane);
         return tab;
     }
 
@@ -1003,9 +1119,10 @@ public class InventoryScreen {
             Tab weaponsArmor = createWeaponsArmorTab();
             Tab wares = createWaresTab();
             Tab keyItems = createKeyItemsTab();
+            Tab tasks = createTasksTab();
             Tab settings = createSettingsTab();
 
-            tabPane.getTabs().setAll(status, weaponsArmor, wares, keyItems, settings);
+            tabPane.getTabs().setAll(status, weaponsArmor, wares, keyItems, tasks, settings);
 
             if (selectedIndex >= 0 && selectedIndex < tabPane.getTabs().size()) {
                 tabPane.getSelectionModel().select(selectedIndex);
@@ -1016,4 +1133,5 @@ public class InventoryScreen {
             Platform.runLater(() -> root.requestFocus());
         });
     }
+
 }
