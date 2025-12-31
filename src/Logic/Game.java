@@ -489,6 +489,38 @@ public class Game {
         addTasks(new Task("Heal yourself.", "Use a healing item once.", "Q002", 100, false));
         //Task(String name, String info, String id, int money, boolean mainQuest)
     }
+    
+    public void createVillagers(){ 
+        //Town
+        
+        //0
+        characters.add(new Villager(true, null, "Morty", "/Resources/sprites/morty.png", tasks.get(5)));
+        characters.get(0).getDialogue().add(
+        "Hi!. Troubles with monsters?. If you defeat 5 creatures I'll give you something.");
+        characters.get(0).getDialogue().add(
+        "Wow, you have defeated 5 monsters!, please receive this gift: ... .");
+        //1
+        characters.add(new Villager(false, null, "Falco", "/Resources/sprites/falco.png", null));
+        characters.get(1).getDialogue().add(
+        "What a beautiful day.");
+        //2
+        characters.add(new Villager(false, null, "Cat", "/Resources/sprites/cat.png", null));
+        characters.get(2).getDialogue().add(
+        "Meao.");
+        //3
+        characters.add(new Villager(true, items.get(23), "Mayor Giovanni", "/Resources/sprites/mayo.png", null));
+        characters.get(3).getDialogue().add(
+        "Welcome to the town hall! I have a letter for you.");
+        //4
+        characters.add(new Villager(false, null, "Host", "/Resources/sprites/host.png", null));
+        characters.get(4).getDialogue().add(
+        "Enjoy your stay.");
+        //5
+        characters.add(new Villager(false, null, "Merchant", "/Resources/sprites/merchant.png", null));
+        characters.get(5).getDialogue().add(
+        "What can I do for you?.");
+        //Villager(boolean gift, Item giftItem, String name, String sprite, Task task)
+    }
 
     public Task searchTask(String id) {
         Task t = null;

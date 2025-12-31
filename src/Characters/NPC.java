@@ -49,6 +49,10 @@ public abstract class NPC {
     public void setName(String name) {
         this.name = name;
     }
+
+    public ArrayList<String> getDialogue() {
+        return dialogue;
+    }
     
     public Image getFxImage() {
         return fxImage;
