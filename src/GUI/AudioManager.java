@@ -9,16 +9,19 @@ public final class AudioManager {
 
     private static final Set<MediaPlayer> players = Collections.synchronizedSet(new LinkedHashSet<>());
 
-    private AudioManager() {}
+    private AudioManager() {
+    }
 
     public static void register(MediaPlayer mp) {
-        if (mp == null) return;
-        players.add(mp);
+        if (mp != null) {
+            players.add(mp);
+        }
     }
 
     public static void unregister(MediaPlayer mp) {
-        if (mp == null) return;
-        players.remove(mp);
+        if (mp != null) {
+            players.remove(mp);
+        }
     }
 
     public static void pauseAll() {
@@ -26,7 +29,8 @@ public final class AudioManager {
             for (MediaPlayer mp : players) {
                 try {
                     mp.pause();
-                } catch (Throwable ignored) {}
+                } catch (Throwable ignored) {
+                }
             }
         }
     }
@@ -36,7 +40,8 @@ public final class AudioManager {
             for (MediaPlayer mp : players) {
                 try {
                     mp.play();
-                } catch (Throwable ignored) {}
+                } catch (Throwable ignored) {
+                }
             }
         }
     }
@@ -47,7 +52,8 @@ public final class AudioManager {
                 try {
                     mp.stop();
                     mp.dispose();
-                } catch (Throwable ignored) {}
+                } catch (Throwable ignored) {
+                }
             }
             players.clear();
         }

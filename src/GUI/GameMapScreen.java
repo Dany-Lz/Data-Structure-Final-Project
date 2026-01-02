@@ -161,22 +161,22 @@ public class GameMapScreen {
                 }
                 double dt = (now - last) / 1e9;
                 last = now;
-
+                boolean shouldProcess = true;
                 if (root.getScene() == null || !root.isFocused()) {
                     clearInputState();
-                    return;
+                    shouldProcess = false;
                 }
-
-                updateVelocity();
-                boolean moving = (vx != 0 || vy != 0);
-                if (moving) {
-                    double dx = vx * dt;
-                    double dy = vy * dt;
-                    moveHeroWithCollision(dx, dy);
+                if (shouldProcess) {
+                    updateVelocity();
+                    boolean moving = (vx != 0 || vy != 0);
+                    if (moving) {
+                        double dx = vx * dt;
+                        double dy = vy * dt;
+                        moveHeroWithCollision(dx, dy);
+                    }
                 }
             }
         };
-
         // Si la escena se asigna, posicionamos el héroe solo si no se ha inicializado externamente
         root.sceneProperty().addListener((obs, oldScene, newScene) -> {
             boolean sceneReady = newScene != null;
@@ -321,12 +321,11 @@ public class GameMapScreen {
                 right = true;
             } else if (k == KeyCode.L) {
                 enterDebugSwamp();
-            }
-            else if (k == KeyCode.Q) {
+            } else if (k == KeyCode.Q) {
                 InBreadthIterator<Classes> it = game.getHero().getUnlockedClasses().inBreadthIterator();
-                while(it.hasNext()){
+                while (it.hasNext()) {
                     System.out.println(it.nextNode().getInfo().getClass().getSimpleName());
-                    
+
                 }
             }
 
@@ -534,39 +533,34 @@ public class GameMapScreen {
     }
 
     private Direction directionFromVector(double vx, double vy) {
-        if (vx == 0 && vy == 0) {
-            return Direction.NONE;
-        }
-        double angle = Math.toDegrees(Math.atan2(-vy, vx));
-        if (angle < 0) {
-            angle += 360.0;
+        Direction result = Direction.NONE;
+
+        if (!(vx == 0 && vy == 0)) {
+            double angle = Math.toDegrees(Math.atan2(-vy, vx));
+            if (angle < 0) {
+                angle += 360.0;
+            }
+
+            if (angle >= 337.5 || angle < 22.5) {
+                result = Direction.E;
+            } else if (angle < 67.5) {
+                result = Direction.NE;
+            } else if (angle < 112.5) {
+                result = Direction.N;
+            } else if (angle < 157.5) {
+                result = Direction.NW;
+            } else if (angle < 202.5) {
+                result = Direction.W;
+            } else if (angle < 247.5) {
+                result = Direction.SW;
+            } else if (angle < 292.5) {
+                result = Direction.S;
+            } else if (angle < 337.5) {
+                result = Direction.SE;
+            }
         }
 
-        if (angle >= 337.5 || angle < 22.5) {
-            return Direction.E;
-        }
-        if (angle < 67.5) {
-            return Direction.NE;
-        }
-        if (angle < 112.5) {
-            return Direction.N;
-        }
-        if (angle < 157.5) {
-            return Direction.NW;
-        }
-        if (angle < 202.5) {
-            return Direction.W;
-        }
-        if (angle < 247.5) {
-            return Direction.SW;
-        }
-        if (angle < 292.5) {
-            return Direction.S;
-        }
-        if (angle < 337.5) {
-            return Direction.SE;
-        }
-        return Direction.NONE;
+        return result;
     }
 
     private void setDirectionIfChanged(Direction newDir) {
@@ -679,6 +673,10 @@ public class GameMapScreen {
 
         Point2D[] blockCenters = new Point2D[]{
             new Point2D(265.78503199999994, 351.7745599999999),
+            new Point2D(95.05904600000007, 360.98100200000033),
+            new Point2D(133.75008200000002, 320.8217060000003),
+            new Point2D(99.19512199999998, 300.5190920000003),
+            new Point2D(60.90420799999998, 320.61026000000027),
             new Point2D(265.78503199999994, 299.99973800000004),
             new Point2D(265.78503199999994, 285.5473580000001),
             new Point2D(265.78503199999994, 271.2116360000001),

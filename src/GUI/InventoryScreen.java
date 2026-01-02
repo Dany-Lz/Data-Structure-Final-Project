@@ -1052,32 +1052,34 @@ public class InventoryScreen {
     }
 
     private Point2D tryGetHeroTopLeftFromProvider() {
-        if (mapScreen == null) {
-            return null;
-        }
-        try {
-            Method m = mapScreen.getClass().getMethod("getHeroMapTopLeft");
-            Object res = m.invoke(mapScreen);
-            if (res instanceof Point2D) {
-                return (Point2D) res;
+        Point2D result = null;
+
+        if (mapScreen != null) {
+            try {
+                Method m = mapScreen.getClass().getMethod("getHeroMapTopLeft");
+                Object res = m.invoke(mapScreen);
+                if (res instanceof Point2D) {
+                    result = (Point2D) res;
+                }
+            } catch (Throwable ignored) {
             }
-        } catch (Throwable ignored) {
         }
-        return null;
+
+        return result;
     }
 
     private boolean isNodeDescendantOfRoot(Node node) {
-        if (node == null) {
-            return false;
-        }
+        boolean result = false;
         Node cur = node;
-        while (cur != null) {
+
+        while (cur != null && !result) {
             if (cur == root) {
-                return true;
+                result = true;
             }
             cur = cur.getParent();
         }
-        return false;
+
+        return result;
     }
 
     private void handleUseWare(Wares ware) {

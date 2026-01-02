@@ -2,7 +2,6 @@ package GUI;
 
 import Logic.Game;
 import Characters.*;
-import Items.Weapon;
 import com.almasb.fxgl.dsl.FXGL;
 import javafx.animation.FadeTransition;
 import javafx.animation.PauseTransition;
@@ -379,62 +378,51 @@ public class CombatScreen {
 
     private void installKeyHandlers() {
         root.addEventFilter(KeyEvent.KEY_PRESSED, ev -> {
+            boolean handled = false;
+
             if (gameOverActive) {
-                ev.consume();
-                return;
-            }
+                handled = true;
+            } else {
+                KeyCode code = ev.getCode();
 
-            KeyCode code = ev.getCode();
-
-            if (code == KeyCode.LEFT) {
-                ev.consume();
-                selectedButtonIndex = Math.max(0, selectedButtonIndex - 1);
-                updateButtonSelection();
-                return;
-            }
-            if (code == KeyCode.RIGHT) {
-                ev.consume();
-                selectedButtonIndex = Math.min(buttons.size() - 1, selectedButtonIndex + 1);
-                updateButtonSelection();
-                return;
-            }
-
-            if (code == KeyCode.ENTER || code == KeyCode.SPACE) {
-                ev.consume();
-                Button sel = buttons.get(selectedButtonIndex);
-                if (sel != null) {
-                    sel.fire();
+                if (code == KeyCode.LEFT) {
+                    selectedButtonIndex = Math.max(0, selectedButtonIndex - 1);
+                    updateButtonSelection();
+                    handled = true;
+                } else if (code == KeyCode.RIGHT) {
+                    selectedButtonIndex = Math.min(buttons.size() - 1, selectedButtonIndex + 1);
+                    updateButtonSelection();
+                    handled = true;
+                } else if (code == KeyCode.ENTER || code == KeyCode.SPACE) {
+                    Button sel = buttons.get(selectedButtonIndex);
+                    if (sel != null) {
+                        sel.fire();
+                    }
+                    handled = true;
+                } else if (code == KeyCode.DIGIT1 || code == KeyCode.NUMPAD1) {
+                    buttons.get(0).fire();
+                    handled = true;
+                } else if (code == KeyCode.DIGIT2 || code == KeyCode.NUMPAD2) {
+                    if (buttons.size() > 1) {
+                        buttons.get(1).fire();
+                    }
+                    handled = true;
+                } else if (code == KeyCode.DIGIT3 || code == KeyCode.NUMPAD3) {
+                    if (buttons.size() > 2) {
+                        buttons.get(2).fire();
+                    }
+                    handled = true;
+                } else if (code == KeyCode.DIGIT4 || code == KeyCode.NUMPAD4) {
+                    if (buttons.size() > 3) {
+                        buttons.get(3).fire();
+                    }
+                    handled = true;
                 }
-                return;
             }
 
-            if (code == KeyCode.DIGIT1 || code == KeyCode.NUMPAD1) {
+            if (handled) {
                 ev.consume();
-                buttons.get(0).fire();
-                return;
             }
-            if (code == KeyCode.DIGIT2 || code == KeyCode.NUMPAD2) {
-                ev.consume();
-                if (buttons.size() > 1) {
-                    buttons.get(1).fire();
-                }
-                return;
-            }
-            if (code == KeyCode.DIGIT3 || code == KeyCode.NUMPAD3) {
-                ev.consume();
-                if (buttons.size() > 2) {
-                    buttons.get(2).fire();
-                }
-                return;
-            }
-            if (code == KeyCode.DIGIT4 || code == KeyCode.NUMPAD4) {
-                ev.consume();
-                if (buttons.size() > 3) {
-                    buttons.get(3).fire();
-                }
-                return;
-            }
-
         });
     }
 
@@ -541,6 +529,65 @@ public class CombatScreen {
         }
     }
 
+    private void showGameOver() {
+        Platform.runLater(() -> {
+            if (gameOverOverlay == null) {
+                gameOverActive = true;
+
+                stopBattleMusic();
+
+                StackPane overlay = new StackPane();
+                overlay.setPrefSize(800, 600);
+                overlay.setStyle("-fx-background-color: rgba(0,0,0,0.85);");
+
+                VBox vbox = new VBox(18);
+                vbox.setAlignment(Pos.CENTER);
+
+                Image goImg = null;
+                try {
+                    goImg = new Image(getClass().getResourceAsStream("/Resources/textures/Main/gameOver.png"));
+                } catch (Throwable ignored) {
+                }
+                ImageView goView = new ImageView(goImg);
+                goView.setPreserveRatio(true);
+                goView.setFitWidth(600);
+                goView.setFitHeight(400);
+
+                Button startBtn = new Button("Start");
+                startBtn.setMinWidth(160);
+                startBtn.setMinHeight(44);
+                startBtn.setStyle("-fx-background-color: linear-gradient(#ff5f6d,#ffc371); -fx-text-fill: white; -fx-font-weight: bold; -fx-background-radius: 6;");
+                startBtn.setFont(Font.font(16));
+
+                startBtn.setOnAction(ev -> {
+                    stopGameOverMusic();
+                    stopBattleMusic();
+                    try {
+                        FXGL.getGameScene().removeUINode(root);
+                    } catch (Throwable ignored) {
+                    }
+                    try {
+                        FXGL.getGameScene().removeUINode(overlay);
+                    } catch (Throwable ignored) {
+                    }
+                    MainScreen.restoreMenuAndMusic();
+                });
+
+                vbox.getChildren().addAll(goView, startBtn);
+                overlay.getChildren().add(vbox);
+
+                gameOverOverlay = overlay;
+
+                try {
+                    FXGL.getGameScene().addUINode(overlay);
+                } catch (Throwable ignored) {
+                }
+
+                playGameOverMusic();
+            }
+        });
+    }
+
     private void removeMonster(Monster m) {
         int idx = monsters.indexOf(m);
         if (idx >= 0) {
@@ -570,67 +617,6 @@ public class CombatScreen {
     }
 
     // Game Over
-    private void showGameOver() {
-        Platform.runLater(() -> {
-            if (gameOverOverlay != null) {
-                return;
-            }
-
-            gameOverActive = true;
-
-            stopBattleMusic();
-
-            StackPane overlay = new StackPane();
-            overlay.setPrefSize(800, 600);
-            overlay.setStyle("-fx-background-color: rgba(0,0,0,0.85);");
-
-            VBox vbox = new VBox(18);
-            vbox.setAlignment(Pos.CENTER);
-
-            Image goImg = null;
-            try {
-                goImg = new Image(getClass().getResourceAsStream("/Resources/textures/Main/gameOver.png"));
-            } catch (Throwable ignored) {
-            }
-            ImageView goView = new ImageView(goImg);
-            goView.setPreserveRatio(true);
-            goView.setFitWidth(600);
-            goView.setFitHeight(400);
-
-            Button startBtn = new Button("Start");
-            startBtn.setMinWidth(160);
-            startBtn.setMinHeight(44);
-            startBtn.setStyle("-fx-background-color: linear-gradient(#ff5f6d,#ffc371); -fx-text-fill: white; -fx-font-weight: bold; -fx-background-radius: 6;");
-            startBtn.setFont(Font.font(16));
-
-            startBtn.setOnAction(ev -> {
-                stopGameOverMusic();
-                stopBattleMusic();
-                try {
-                    FXGL.getGameScene().removeUINode(root);
-                } catch (Throwable ignored) {
-                }
-                try {
-                    FXGL.getGameScene().removeUINode(overlay);
-                } catch (Throwable ignored) {
-                }
-                MainScreen.restoreMenuAndMusic();
-            });
-
-            vbox.getChildren().addAll(goView, startBtn);
-            overlay.getChildren().add(vbox);
-
-            gameOverOverlay = overlay;
-
-            try {
-                FXGL.getGameScene().addUINode(overlay);
-            } catch (Throwable ignored) {
-            }
-
-            playGameOverMusic();
-        });
-    }
-
     private void playGameOverMusic() {
         try {
             stopGameOverMusic();

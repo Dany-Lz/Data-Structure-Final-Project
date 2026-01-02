@@ -8,7 +8,6 @@ import java.net.URL;
 import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.List;
-import java.util.Optional;
 import java.util.Set;
 import javafx.animation.AnimationTimer;
 import javafx.animation.FadeTransition;
@@ -17,8 +16,6 @@ import javafx.application.Platform;
 import javafx.geometry.Point2D;
 import javafx.geometry.Pos;
 import javafx.geometry.Rectangle2D;
-import javafx.scene.control.Alert;
-import javafx.scene.control.ButtonType;
 import javafx.scene.image.Image;
 import javafx.scene.image.ImageView;
 import javafx.scene.input.KeyCode;
@@ -1602,12 +1599,15 @@ public class Swamp {
                 double dt = (now - last) / 1e9;
                 last = now;
 
+                boolean shouldProcess = true;
                 if (root.getScene() == null || !root.isFocused()) {
                     clearInputState();
-                    return;
+                    shouldProcess = false;
                 }
 
-                updateAndMove(dt);
+                if (shouldProcess) {
+                    updateAndMove(dt);
+                }
             }
         };
     }
@@ -1632,12 +1632,12 @@ public class Swamp {
                 ? directionFromVector(vx, vy) : Swamp.Direction.NONE;
         setDirectionIfChanged(newDir);
 
-        if (vx == 0 && vy == 0) {
+        boolean isIdle = (vx == 0 && vy == 0);
+        if (isIdle) {
             checkStartIntersection();
-            return;
+        } else {
+            moveHero(vx * dt, vy * dt);
         }
-
-        moveHero(vx * dt, vy * dt);
     }
 
     private void moveHero(double dx, double dy) {
@@ -1688,39 +1688,34 @@ public class Swamp {
     }
 
     private Swamp.Direction directionFromVector(double vx, double vy) {
-        if (vx == 0 && vy == 0) {
-            return Swamp.Direction.NONE;
-        }
-        double angle = Math.toDegrees(Math.atan2(-vy, vx));
-        if (angle < 0) {
-            angle += 360.0;
+        Swamp.Direction result = Swamp.Direction.NONE;
+
+        if (!(vx == 0 && vy == 0)) {
+            double angle = Math.toDegrees(Math.atan2(-vy, vx));
+            if (angle < 0) {
+                angle += 360.0;
+            }
+
+            if (angle >= 337.5 || angle < 22.5) {
+                result = Swamp.Direction.E;
+            } else if (angle < 67.5) {
+                result = Swamp.Direction.NE;
+            } else if (angle < 112.5) {
+                result = Swamp.Direction.N;
+            } else if (angle < 157.5) {
+                result = Swamp.Direction.NW;
+            } else if (angle < 202.5) {
+                result = Swamp.Direction.W;
+            } else if (angle < 247.5) {
+                result = Swamp.Direction.SW;
+            } else if (angle < 292.5) {
+                result = Swamp.Direction.S;
+            } else if (angle < 337.5) {
+                result = Swamp.Direction.SE;
+            }
         }
 
-        if (angle >= 337.5 || angle < 22.5) {
-            return Swamp.Direction.E;
-        }
-        if (angle < 67.5) {
-            return Swamp.Direction.NE;
-        }
-        if (angle < 112.5) {
-            return Swamp.Direction.N;
-        }
-        if (angle < 157.5) {
-            return Swamp.Direction.NW;
-        }
-        if (angle < 202.5) {
-            return Swamp.Direction.W;
-        }
-        if (angle < 247.5) {
-            return Swamp.Direction.SW;
-        }
-        if (angle < 292.5) {
-            return Swamp.Direction.S;
-        }
-        if (angle < 337.5) {
-            return Swamp.Direction.SE;
-        }
-        return Swamp.Direction.NONE;
+        return result;
     }
 
     private void setDirectionIfChanged(Swamp.Direction newDir) {
@@ -1735,13 +1730,14 @@ public class Swamp {
     }
 
     private void checkStartIntersection() {
-        if (startRect == null) {
-            onStartRect = false;
-            return;
+        boolean intersects = false;
+
+        if (startRect != null) {
+            intersects = heroView.getBoundsInParent().intersects(startRect.getBoundsInParent());
+            startRect.setFill(intersects ? Color.rgb(0, 120, 255, 0.42) : Color.rgb(0, 120, 255, 0.28));
         }
-        boolean intersects = heroView.getBoundsInParent().intersects(startRect.getBoundsInParent());
+
         onStartRect = intersects;
-        startRect.setFill(intersects ? Color.rgb(0, 120, 255, 0.42) : Color.rgb(0, 120, 255, 0.28));
     }
 
     private void updateCamera() {
@@ -1771,13 +1767,13 @@ public class Swamp {
     }
 
     private static double clamp(double v, double lo, double hi) {
-        if (v < lo) {
-            return lo;
+        double result = v;
+        if (result < lo) {
+            result = lo;
+        } else if (result > hi) {
+            result = hi;
         }
-        if (v > hi) {
-            return hi;
-        }
-        return v;
+        return result;
     }
 
     private void clearInputState() {

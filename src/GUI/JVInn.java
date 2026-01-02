@@ -1,7 +1,3 @@
-/*
- * Click nbfs://nbhost/SystemFileSystem/Templates/Licenses/license-default.txt to change this license
- * Click nbfs://nbhost/SystemFileSystem/Templates/Classes/Class.java to edit this template
- */
 package GUI;
 
 import Runner.MainScreen;
@@ -238,6 +234,7 @@ public class JVInn {
     }
 
     private boolean loadBackgroundImage(String path) {
+        boolean load = false;
         try {
             Image img = new Image(getClass().getResourceAsStream(path));
             backgroundView = new ImageView(img);
@@ -259,31 +256,33 @@ public class JVInn {
             } else {
                 heroView.toFront();
             }
-            return true;
+            load = true;
         } catch (Throwable t) {
             Text err = new Text("No se pudo cargar la imagen de la aldea.");
             err.setStyle("-fx-font-size: 16px; -fx-fill: #ffdddd;");
             root.getChildren().add(err);
-            return false;
+
         }
+        return load;
     }
 
     private boolean startVillageMusic(String path) {
+        boolean result = false;
         try {
             URL res = getClass().getResource(path);
-            if (res == null) {
-                return false;
+            if (res != null) {
+                Media media = new Media(res.toExternalForm());
+                stopVillageMusic();
+                music = new MediaPlayer(media);
+                music.setCycleCount(MediaPlayer.INDEFINITE);
+                music.setVolume(MainScreen.getVolumeSetting());
+                music.play();
+                result = true;
             }
-            Media media = new Media(res.toExternalForm());
-            stopVillageMusic();
-            music = new MediaPlayer(media);
-            music.setCycleCount(MediaPlayer.INDEFINITE);
-            music.setVolume(MainScreen.getVolumeSetting());
-            music.play();
-            return true;
         } catch (Throwable t) {
-            return false;
+            result = false;
         }
+        return result;
     }
 
     private ImageView createHeroView() {
@@ -435,10 +434,13 @@ public class JVInn {
         startY = clamp(startY, 0, Math.max(0, worldH - HERO_H));
 
         Rectangle2D heroRect = new Rectangle2D(startX, startY, HERO_W, HERO_H);
-        for (JVInn.Obstacle ob : obstacles) {
+
+        boolean collisionFound = false;
+        for (int i = 0; i < obstacles.size() && !collisionFound; i++) {
+            JVInn.Obstacle ob = obstacles.get(i);
             if (heroRect.intersects(ob.collisionRect)) {
                 startY = ob.collisionRect.getMinY() - HERO_H - 5;
-                break;
+                collisionFound = true;
             }
         }
 
@@ -520,53 +522,6 @@ public class JVInn {
                     } else {
                         hide();
                     }
-                }
-            }
-
-            if (k == KeyCode.ESCAPE) {
-                clearInputState();
-
-                Alert dlg = new Alert(Alert.AlertType.CONFIRMATION);
-                dlg.setTitle("Volver al menú");
-                dlg.setHeaderText("¿Quieres volver al menú principal?");
-                dlg.setContentText("Si vuelves al menú, la partida seguirá guardada en disco.");
-                try {
-                    if (root.getScene() != null && root.getScene().getWindow() != null) {
-                        dlg.initOwner(root.getScene().getWindow());
-                    }
-                } catch (Throwable ignored) {
-                }
-                dlg.setOnHidden(eh -> {
-                    clearInputState();
-                    Platform.runLater(root::requestFocus);
-                });
-
-                Optional<ButtonType> opt = dlg.showAndWait();
-                boolean ok = opt.isPresent() && opt.get() == ButtonType.OK;
-                if (ok) {
-                    try {
-                        if (game != null && game.getHero() != null) {
-                            Hero h = game.getHero();
-                            h.setLastLocation(Hero.Location.FIELD_VILLAGE);
-                            h.setLastPosY(heroView.getLayoutY());
-                            h.setLastPosX(heroView.getLayoutX());
-                            try {
-                                game.createSaveGame();
-                            } catch (Throwable ignored) {
-                            }
-                        }
-                    } catch (Throwable ignored) {
-                    }
-
-                    stopVillageMusic();
-                    try {
-                        FXGL.getGameScene().removeUINode(root);
-                    } catch (Throwable ignored) {
-                    }
-                    MainScreen.restoreMenuAndMusic();
-                } else {
-                    clearInputState();
-                    Platform.runLater(root::requestFocus);
                 }
             }
 
@@ -652,12 +607,15 @@ public class JVInn {
                 double dt = (now - last) / 1e9;
                 last = now;
 
+                boolean shouldProcess = true;
                 if (root.getScene() == null || !root.isFocused()) {
                     clearInputState();
-                    return;
+                    shouldProcess = false;
                 }
 
-                updateAndMove(dt);
+                if (shouldProcess) {
+                    updateAndMove(dt);
+                }
             }
         };
     }
@@ -681,12 +639,12 @@ public class JVInn {
         JVInn.Direction newDir = (vx != 0 || vy != 0) ? directionFromVector(vx, vy) : JVInn.Direction.NONE;
         setDirectionIfChanged(newDir);
 
-        if (vx == 0 && vy == 0) {
+        boolean isIdle = (vx == 0 && vy == 0);
+        if (isIdle) {
             checkStartIntersection();
-            return;
+        } else {
+            moveHero(vx * dt, vy * dt);
         }
-
-        moveHero(vx * dt, vy * dt);
     }
 
     private void moveHero(double dx, double dy) {
@@ -698,11 +656,10 @@ public class JVInn {
 
         Rectangle2D heroRect = new Rectangle2D(proposedX, proposedY, HERO_W, HERO_H);
         boolean collision = false;
-
-        for (JVInn.Obstacle ob : obstacles) {
+        for (int i = 0; i < obstacles.size() && !collision; i++) {
+            JVInn.Obstacle ob = obstacles.get(i);
             if (heroRect.intersects(ob.collisionRect)) {
                 collision = true;
-                break;
             }
         }
 
@@ -716,11 +673,12 @@ public class JVInn {
             boolean canMoveX = true;
             boolean canMoveY = true;
 
-            for (JVInn.Obstacle ob : obstacles) {
-                if (heroRectX.intersects(ob.collisionRect)) {
+            for (int i = 0; i < obstacles.size() && (canMoveX || canMoveY); i++) {
+                JVInn.Obstacle ob = obstacles.get(i);
+                if (canMoveX && heroRectX.intersects(ob.collisionRect)) {
                     canMoveX = false;
                 }
-                if (heroRectY.intersects(ob.collisionRect)) {
+                if (canMoveY && heroRectY.intersects(ob.collisionRect)) {
                     canMoveY = false;
                 }
             }
@@ -732,45 +690,41 @@ public class JVInn {
                 heroView.setLayoutY(proposedY);
             }
         }
+
         checkExitArea();
         checkStartIntersection();
         updateCamera();
     }
 
     private JVInn.Direction directionFromVector(double vx, double vy) {
-        if (vx == 0 && vy == 0) {
-            return JVInn.Direction.NONE;
-        }
-        double angle = Math.toDegrees(Math.atan2(-vy, vx));
-        if (angle < 0) {
-            angle += 360.0;
+        JVInn.Direction result = JVInn.Direction.NONE;
+
+        if (!(vx == 0 && vy == 0)) {
+            double angle = Math.toDegrees(Math.atan2(-vy, vx));
+            if (angle < 0) {
+                angle += 360.0;
+            }
+
+            if (angle >= 337.5 || angle < 22.5) {
+                result = JVInn.Direction.E;
+            } else if (angle < 67.5) {
+                result = JVInn.Direction.NE;
+            } else if (angle < 112.5) {
+                result = JVInn.Direction.N;
+            } else if (angle < 157.5) {
+                result = JVInn.Direction.NW;
+            } else if (angle < 202.5) {
+                result = JVInn.Direction.W;
+            } else if (angle < 247.5) {
+                result = JVInn.Direction.SW;
+            } else if (angle < 292.5) {
+                result = JVInn.Direction.S;
+            } else if (angle < 337.5) {
+                result = JVInn.Direction.SE;
+            }
         }
 
-        if (angle >= 337.5 || angle < 22.5) {
-            return JVInn.Direction.E;
-        }
-        if (angle < 67.5) {
-            return JVInn.Direction.NE;
-        }
-        if (angle < 112.5) {
-            return JVInn.Direction.N;
-        }
-        if (angle < 157.5) {
-            return JVInn.Direction.NW;
-        }
-        if (angle < 202.5) {
-            return JVInn.Direction.W;
-        }
-        if (angle < 247.5) {
-            return JVInn.Direction.SW;
-        }
-        if (angle < 292.5) {
-            return JVInn.Direction.S;
-        }
-        if (angle < 337.5) {
-            return JVInn.Direction.SE;
-        }
-        return JVInn.Direction.NONE;
+        return result;
     }
 
     private void setDirectionIfChanged(JVInn.Direction newDir) {
@@ -785,13 +739,16 @@ public class JVInn {
     }
 
     private void checkStartIntersection() {
-        if (startRect == null) {
-            onStartRect = false;
-            return;
+        boolean intersects = false;
+
+        if (startRect != null) {
+            intersects = heroView.getBoundsInParent().intersects(startRect.getBoundsInParent());
+            startRect.setFill(intersects ? Color.rgb(0, 120, 255, 0.42) : Color.rgb(0, 120, 255, 0.28));
+        } else {
+            intersects = false;
         }
-        boolean intersects = heroView.getBoundsInParent().intersects(startRect.getBoundsInParent());
+
         onStartRect = intersects;
-        startRect.setFill(intersects ? Color.rgb(0, 120, 255, 0.42) : Color.rgb(0, 120, 255, 0.28));
     }
 
     private void updateCamera() {
@@ -821,13 +778,13 @@ public class JVInn {
     }
 
     private static double clamp(double v, double lo, double hi) {
-        if (v < lo) {
-            return lo;
+        double result = v;
+        if (result < lo) {
+            result = lo;
+        } else if (result > hi) {
+            result = hi;
         }
-        if (v > hi) {
-            return hi;
-        }
-        return v;
+        return result;
     }
 
     private void clearInputState() {
