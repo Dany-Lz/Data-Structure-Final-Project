@@ -1,7 +1,3 @@
-/*
- * Click nbfs://nbhost/SystemFileSystem/Templates/Licenses/license-default.txt to change this license
- * Click nbfs://nbhost/SystemFileSystem/Templates/Classes/Class.java to edit this template
- */
 package GUI;
 
 import Runner.MainScreen;
@@ -65,7 +61,7 @@ public class JVStore {
 
     // Sistema de colisiones
     private final List<Obstacle> obstacles = new ArrayList<>();
-    private boolean debugEnabled = true;
+    private boolean debugEnabled = false;
 
     // Inventario (si se abre desde aquí se pasa this)
     private InventoryScreen inventory;
@@ -145,9 +141,7 @@ public class JVStore {
             createStartRectAtHeroStart();
 
             // Dibujar obstáculos en modo debug
-            if (debugEnabled) {
-                drawDebugObstacles();
-            }
+            drawDebugObstacles();
 
             PauseTransition wait = new PauseTransition(Duration.millis(600));
             wait.setOnFinished(e -> {
@@ -238,6 +232,7 @@ public class JVStore {
     }
 
     private boolean loadBackgroundImage(String path) {
+        boolean result = false;
         try {
             Image img = new Image(getClass().getResourceAsStream(path));
             backgroundView = new ImageView(img);
@@ -259,31 +254,35 @@ public class JVStore {
             } else {
                 heroView.toFront();
             }
-            return true;
+            result = true;
         } catch (Throwable t) {
             Text err = new Text("No se pudo cargar la imagen de la aldea.");
             err.setStyle("-fx-font-size: 16px; -fx-fill: #ffdddd;");
             root.getChildren().add(err);
-            return false;
+            result = false;
         }
+        return result;
     }
 
     private boolean startVillageMusic(String path) {
+        boolean result = false;
         try {
             URL res = getClass().getResource(path);
-            if (res == null) {
-                return false;
+            if (res != null) {
+                Media media = new Media(res.toExternalForm());
+                stopVillageMusic();
+                music = new MediaPlayer(media);
+                music.setCycleCount(MediaPlayer.INDEFINITE);
+                music.setVolume(MainScreen.getVolumeSetting());
+                music.play();
+                result = true;
+            } else {
+                result = false;
             }
-            Media media = new Media(res.toExternalForm());
-            stopVillageMusic();
-            music = new MediaPlayer(media);
-            music.setCycleCount(MediaPlayer.INDEFINITE);
-            music.setVolume(MainScreen.getVolumeSetting());
-            music.play();
-            return true;
         } catch (Throwable t) {
-            return false;
+            result = false;
         }
+        return result;
     }
 
     private ImageView createHeroView() {
@@ -363,47 +362,46 @@ public class JVStore {
     private void drawDebugObstacles() {
         world.getChildren().removeIf(n -> "debug_obstacle".equals(n.getProperties().get("tag")));
 
-        if (!debugEnabled) {
-            return;
-        }
+        boolean shouldDraw = debugEnabled;
+        if (shouldDraw) {
+            for (JVStore.Obstacle ob : obstacles) {
+                Rectangle rect = new Rectangle(
+                        ob.collisionRect.getMinX(),
+                        ob.collisionRect.getMinY(),
+                        ob.collisionRect.getWidth(),
+                        ob.collisionRect.getHeight()
+                );
 
-        for (JVStore.Obstacle ob : obstacles) {
-            Rectangle rect = new Rectangle(
-                    ob.collisionRect.getMinX(),
-                    ob.collisionRect.getMinY(),
-                    ob.collisionRect.getWidth(),
-                    ob.collisionRect.getHeight()
-            );
+                switch (ob.type) {
+                    case HOUSE:
+                        rect.setFill(Color.rgb(139, 69, 19, 0.4));
+                        rect.setStroke(Color.rgb(101, 50, 14, 0.8));
+                        break;
+                    case TREE:
+                        rect.setFill(Color.rgb(34, 139, 34, 0.4));
+                        rect.setStroke(Color.rgb(0, 100, 0, 0.8));
+                        break;
+                    case WELL:
+                        rect.setFill(Color.rgb(105, 105, 105, 0.4));
+                        rect.setStroke(Color.rgb(64, 64, 64, 0.8));
+                        break;
+                    case FENCE:
+                        rect.setFill(Color.rgb(160, 82, 45, 0.4));
+                        rect.setStroke(Color.rgb(101, 50, 14, 0.8));
+                        break;
+                    case BUSH:
+                        rect.setFill(Color.rgb(0, 128, 0, 0.4));
+                        rect.setStroke(Color.rgb(0, 64, 0, 0.8));
+                        break;
+                    default:
+                        rect.setFill(Color.rgb(255, 0, 0, 0.3));
+                        rect.setStroke(Color.RED);
+                }
 
-            switch (ob.type) {
-                case HOUSE:
-                    rect.setFill(Color.rgb(139, 69, 19, 0.4));
-                    rect.setStroke(Color.rgb(101, 50, 14, 0.8));
-                    break;
-                case TREE:
-                    rect.setFill(Color.rgb(34, 139, 34, 0.4));
-                    rect.setStroke(Color.rgb(0, 100, 0, 0.8));
-                    break;
-                case WELL:
-                    rect.setFill(Color.rgb(105, 105, 105, 0.4));
-                    rect.setStroke(Color.rgb(64, 64, 64, 0.8));
-                    break;
-                case FENCE:
-                    rect.setFill(Color.rgb(160, 82, 45, 0.4));
-                    rect.setStroke(Color.rgb(101, 50, 14, 0.8));
-                    break;
-                case BUSH:
-                    rect.setFill(Color.rgb(0, 128, 0, 0.4));
-                    rect.setStroke(Color.rgb(0, 64, 0, 0.8));
-                    break;
-                default:
-                    rect.setFill(Color.rgb(255, 0, 0, 0.3));
-                    rect.setStroke(Color.RED);
+                rect.getProperties().put("tag", "debug_obstacle");
+                rect.setMouseTransparent(true);
+                world.getChildren().add(rect);
             }
-
-            rect.getProperties().put("tag", "debug_obstacle");
-            rect.setMouseTransparent(true);
-            world.getChildren().add(rect);
         }
     }
 
@@ -416,10 +414,13 @@ public class JVStore {
         startY = clamp(startY, 0, Math.max(0, worldH - HERO_H));
 
         Rectangle2D heroRect = new Rectangle2D(startX, startY, HERO_W, HERO_H);
-        for (JVStore.Obstacle ob : obstacles) {
+
+        boolean collisionFound = false;
+        for (int i = 0; i < obstacles.size() && !collisionFound; i++) {
+            JVStore.Obstacle ob = obstacles.get(i);
             if (heroRect.intersects(ob.collisionRect)) {
                 startY = ob.collisionRect.getMinY() - HERO_H - 5;
-                break;
+                collisionFound = true;
             }
         }
 
@@ -501,53 +502,6 @@ public class JVStore {
                     } else {
                         hide();
                     }
-                }
-            }
-
-            if (k == KeyCode.ESCAPE) {
-                clearInputState();
-
-                Alert dlg = new Alert(Alert.AlertType.CONFIRMATION);
-                dlg.setTitle("Volver al menú");
-                dlg.setHeaderText("¿Quieres volver al menú principal?");
-                dlg.setContentText("Si vuelves al menú, la partida seguirá guardada en disco.");
-                try {
-                    if (root.getScene() != null && root.getScene().getWindow() != null) {
-                        dlg.initOwner(root.getScene().getWindow());
-                    }
-                } catch (Throwable ignored) {
-                }
-                dlg.setOnHidden(eh -> {
-                    clearInputState();
-                    Platform.runLater(root::requestFocus);
-                });
-
-                Optional<ButtonType> opt = dlg.showAndWait();
-                boolean ok = opt.isPresent() && opt.get() == ButtonType.OK;
-                if (ok) {
-                    try {
-                        if (game != null && game.getHero() != null) {
-                            Hero h = game.getHero();
-                            h.setLastLocation(Hero.Location.FIELD_VILLAGE);
-                            h.setLastPosY(heroView.getLayoutY());
-                            h.setLastPosX(heroView.getLayoutX());
-                            try {
-                                game.createSaveGame();
-                            } catch (Throwable ignored) {
-                            }
-                        }
-                    } catch (Throwable ignored) {
-                    }
-
-                    stopVillageMusic();
-                    try {
-                        FXGL.getGameScene().removeUINode(root);
-                    } catch (Throwable ignored) {
-                    }
-                    MainScreen.restoreMenuAndMusic();
-                } else {
-                    clearInputState();
-                    Platform.runLater(root::requestFocus);
                 }
             }
 
@@ -633,12 +587,15 @@ public class JVStore {
                 double dt = (now - last) / 1e9;
                 last = now;
 
+                boolean shouldProcess = true;
                 if (root.getScene() == null || !root.isFocused()) {
                     clearInputState();
-                    return;
+                    shouldProcess = false;
                 }
 
-                updateAndMove(dt);
+                if (shouldProcess) {
+                    updateAndMove(dt);
+                }
             }
         };
     }
@@ -662,12 +619,12 @@ public class JVStore {
         JVStore.Direction newDir = (vx != 0 || vy != 0) ? directionFromVector(vx, vy) : JVStore.Direction.NONE;
         setDirectionIfChanged(newDir);
 
-        if (vx == 0 && vy == 0) {
+        boolean isIdle = (vx == 0 && vy == 0);
+        if (isIdle) {
             checkStartIntersection();
-            return;
+        } else {
+            moveHero(vx * dt, vy * dt);
         }
-
-        moveHero(vx * dt, vy * dt);
     }
 
     private void moveHero(double dx, double dy) {
@@ -678,12 +635,12 @@ public class JVStore {
         double proposedY = clamp(curY + dy, 0, Math.max(0, worldH - HERO_H));
 
         Rectangle2D heroRect = new Rectangle2D(proposedX, proposedY, HERO_W, HERO_H);
-        boolean collision = false;
 
-        for (JVStore.Obstacle ob : obstacles) {
+        boolean collision = false;
+        for (int i = 0; i < obstacles.size() && !collision; i++) {
+            JVStore.Obstacle ob = obstacles.get(i);
             if (heroRect.intersects(ob.collisionRect)) {
                 collision = true;
-                break;
             }
         }
 
@@ -697,11 +654,12 @@ public class JVStore {
             boolean canMoveX = true;
             boolean canMoveY = true;
 
-            for (JVStore.Obstacle ob : obstacles) {
-                if (heroRectX.intersects(ob.collisionRect)) {
+            for (int i = 0; i < obstacles.size() && (canMoveX || canMoveY); i++) {
+                JVStore.Obstacle ob = obstacles.get(i);
+                if (canMoveX && heroRectX.intersects(ob.collisionRect)) {
                     canMoveX = false;
                 }
-                if (heroRectY.intersects(ob.collisionRect)) {
+                if (canMoveY && heroRectY.intersects(ob.collisionRect)) {
                     canMoveY = false;
                 }
             }
@@ -719,39 +677,34 @@ public class JVStore {
     }
 
     private JVStore.Direction directionFromVector(double vx, double vy) {
-        if (vx == 0 && vy == 0) {
-            return JVStore.Direction.NONE;
-        }
-        double angle = Math.toDegrees(Math.atan2(-vy, vx));
-        if (angle < 0) {
-            angle += 360.0;
+        JVStore.Direction result = JVStore.Direction.NONE;
+
+        if (!(vx == 0 && vy == 0)) {
+            double angle = Math.toDegrees(Math.atan2(-vy, vx));
+            if (angle < 0) {
+                angle += 360.0;
+            }
+
+            if (angle >= 337.5 || angle < 22.5) {
+                result = JVStore.Direction.E;
+            } else if (angle < 67.5) {
+                result = JVStore.Direction.NE;
+            } else if (angle < 112.5) {
+                result = JVStore.Direction.N;
+            } else if (angle < 157.5) {
+                result = JVStore.Direction.NW;
+            } else if (angle < 202.5) {
+                result = JVStore.Direction.W;
+            } else if (angle < 247.5) {
+                result = JVStore.Direction.SW;
+            } else if (angle < 292.5) {
+                result = JVStore.Direction.S;
+            } else if (angle < 337.5) {
+                result = JVStore.Direction.SE;
+            }
         }
 
-        if (angle >= 337.5 || angle < 22.5) {
-            return JVStore.Direction.E;
-        }
-        if (angle < 67.5) {
-            return JVStore.Direction.NE;
-        }
-        if (angle < 112.5) {
-            return JVStore.Direction.N;
-        }
-        if (angle < 157.5) {
-            return JVStore.Direction.NW;
-        }
-        if (angle < 202.5) {
-            return JVStore.Direction.W;
-        }
-        if (angle < 247.5) {
-            return JVStore.Direction.SW;
-        }
-        if (angle < 292.5) {
-            return JVStore.Direction.S;
-        }
-        if (angle < 337.5) {
-            return JVStore.Direction.SE;
-        }
-        return JVStore.Direction.NONE;
+        return result;
     }
 
     private void setDirectionIfChanged(JVStore.Direction newDir) {
@@ -766,13 +719,14 @@ public class JVStore {
     }
 
     private void checkStartIntersection() {
-        if (startRect == null) {
-            onStartRect = false;
-            return;
+        boolean intersects = false;
+
+        if (startRect != null) {
+            intersects = heroView.getBoundsInParent().intersects(startRect.getBoundsInParent());
+            startRect.setFill(intersects ? Color.rgb(0, 120, 255, 0.42) : Color.rgb(0, 120, 255, 0.28));
         }
-        boolean intersects = heroView.getBoundsInParent().intersects(startRect.getBoundsInParent());
+
         onStartRect = intersects;
-        startRect.setFill(intersects ? Color.rgb(0, 120, 255, 0.42) : Color.rgb(0, 120, 255, 0.28));
     }
 
     private void updateCamera() {
@@ -802,13 +756,13 @@ public class JVStore {
     }
 
     private static double clamp(double v, double lo, double hi) {
-        if (v < lo) {
-            return lo;
+        double result = v;
+        if (result < lo) {
+            result = lo;
+        } else if (result > hi) {
+            result = hi;
         }
-        if (v > hi) {
-            return hi;
-        }
-        return v;
+        return result;
     }
 
     private void clearInputState() {

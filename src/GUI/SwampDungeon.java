@@ -10,7 +10,7 @@ import java.net.URL;
 import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.List;
-import java.util.Optional;
+
 import java.util.Set;
 import javafx.animation.AnimationTimer;
 import javafx.animation.FadeTransition;
@@ -19,9 +19,6 @@ import javafx.application.Platform;
 import javafx.geometry.Point2D;
 import javafx.geometry.Pos;
 import javafx.geometry.Rectangle2D;
-import javafx.scene.Node;
-import javafx.scene.control.Alert;
-import javafx.scene.control.ButtonType;
 import javafx.scene.image.Image;
 import javafx.scene.image.ImageView;
 import javafx.scene.input.KeyCode;
@@ -820,7 +817,6 @@ public class SwampDungeon {
 
             if (k == KeyCode.P) {
                 System.out.println("Hero position (Zona): (" + heroView.getLayoutX() + ", " + heroView.getLayoutY() + ")");
-                //  System.out.println("Hero world center (aldea): (" + (heroView.getLayoutX() + HERO_W / 2) + ", " + (heroView.getLayoutY() + HERO_H / 2) + ")");
             }
 
             if (k == KeyCode.I || k == KeyCode.ADD || k == KeyCode.PLUS) {
@@ -838,10 +834,7 @@ public class SwampDungeon {
                 } else {
                     world.getChildren().removeIf(n -> "obstacle_debug".equals(n.getProperties().get("tag")));
                 }
-                for (Task t : game.getHero().getCompletedTasks()) {
-                    System.out.print(t.getName());
 
-                }
             }
 
             if (k == KeyCode.ENTER) {
@@ -881,43 +874,6 @@ public class SwampDungeon {
                     }
                 } else {
                     checkReturnToPreviousZone();
-                    /*
-                    double targetX = 478.74575400000003;
-                    double targetY = 194.0153579999983;
-                    Rectangle2D targetRect = new Rectangle2D(targetX, targetY, HERO_W, HERO_H);
-                    Rectangle2D heroRect = new Rectangle2D(heroView.getLayoutX(), heroView.getLayoutY(), HERO_W, HERO_H);
-
-                    if (heroRect.intersects(targetRect)) {
-                        final Point2D savedHeroTopLeft = getHeroMapTopLeft();
-
-                        clearInputState();
-
-                        stopMapMusic();
-                        try {
-                            FXGL.getGameScene().removeUINode(root);
-                        } catch (Throwable ignored) {
-                        }
-
-                        SwampDungeon swamp = new SwampDungeon(game);
-                        swamp.showWithLoading(null, () -> {
-                            Platform.runLater(() -> {
-                                MainScreen.hideMenu();
-                                startMapMusic();
-                                try {
-                                    FXGL.getGameScene().addUINode(root);
-                                } catch (Throwable ignored) {
-                                }
-                                heroView.setLayoutX(savedHeroTopLeft.getX());
-                                heroView.setLayoutY(savedHeroTopLeft.getY());
-                                if (debugEnabled) {
-                                    drawDebugObstacles();
-                                }
-                                root.requestFocus();
-                                clearInputState();
-                                mover.start();
-                            });
-                        });
-                    } */
 
                 }
             }
@@ -1003,12 +959,15 @@ public class SwampDungeon {
                 double dt = (now - last) / 1e9;
                 last = now;
 
+                boolean shouldProcess = true;
                 if (root.getScene() == null || !root.isFocused()) {
                     clearInputState();
-                    return;
+                    shouldProcess = false;
                 }
 
-                updateAndMove(dt);
+                if (shouldProcess) {
+                    updateAndMove(dt);
+                }
             }
         };
     }
@@ -1033,12 +992,12 @@ public class SwampDungeon {
                 ? directionFromVector(vx, vy) : SwampDungeon.Direction.NONE;
         setDirectionIfChanged(newDir);
 
-        if (vx == 0 && vy == 0) {
+        boolean isIdle = (vx == 0 && vy == 0);
+        if (isIdle) {
             checkStartIntersection();
-            return;
+        } else {
+            moveHero(vx * dt, vy * dt);
         }
-
-        moveHero(vx * dt, vy * dt);
     }
 
     private void moveHero(double dx, double dy) {
@@ -1089,39 +1048,34 @@ public class SwampDungeon {
     }
 
     private SwampDungeon.Direction directionFromVector(double vx, double vy) {
-        if (vx == 0 && vy == 0) {
-            return SwampDungeon.Direction.NONE;
-        }
-        double angle = Math.toDegrees(Math.atan2(-vy, vx));
-        if (angle < 0) {
-            angle += 360.0;
+        SwampDungeon.Direction result = SwampDungeon.Direction.NONE;
+
+        if (!(vx == 0 && vy == 0)) {
+            double angle = Math.toDegrees(Math.atan2(-vy, vx));
+            if (angle < 0) {
+                angle += 360.0;
+            }
+
+            if (angle >= 337.5 || angle < 22.5) {
+                result = SwampDungeon.Direction.E;
+            } else if (angle < 67.5) {
+                result = SwampDungeon.Direction.NE;
+            } else if (angle < 112.5) {
+                result = SwampDungeon.Direction.N;
+            } else if (angle < 157.5) {
+                result = SwampDungeon.Direction.NW;
+            } else if (angle < 202.5) {
+                result = SwampDungeon.Direction.W;
+            } else if (angle < 247.5) {
+                result = SwampDungeon.Direction.SW;
+            } else if (angle < 292.5) {
+                result = SwampDungeon.Direction.S;
+            } else if (angle < 337.5) {
+                result = SwampDungeon.Direction.SE;
+            }
         }
 
-        if (angle >= 337.5 || angle < 22.5) {
-            return SwampDungeon.Direction.E;
-        }
-        if (angle < 67.5) {
-            return SwampDungeon.Direction.NE;
-        }
-        if (angle < 112.5) {
-            return SwampDungeon.Direction.N;
-        }
-        if (angle < 157.5) {
-            return SwampDungeon.Direction.NW;
-        }
-        if (angle < 202.5) {
-            return SwampDungeon.Direction.W;
-        }
-        if (angle < 247.5) {
-            return SwampDungeon.Direction.SW;
-        }
-        if (angle < 292.5) {
-            return SwampDungeon.Direction.S;
-        }
-        if (angle < 337.5) {
-            return SwampDungeon.Direction.SE;
-        }
-        return SwampDungeon.Direction.NONE;
+        return result;
     }
 
     private void setDirectionIfChanged(SwampDungeon.Direction newDir) {
@@ -1136,13 +1090,14 @@ public class SwampDungeon {
     }
 
     private void checkStartIntersection() {
-        if (startRect == null) {
-            onStartRect = false;
-            return;
+        boolean intersects = false;
+
+        if (startRect != null) {
+            intersects = heroView.getBoundsInParent().intersects(startRect.getBoundsInParent());
+            startRect.setFill(intersects ? Color.rgb(0, 120, 255, 0.42) : Color.rgb(0, 120, 255, 0.28));
         }
-        boolean intersects = heroView.getBoundsInParent().intersects(startRect.getBoundsInParent());
+
         onStartRect = intersects;
-        startRect.setFill(intersects ? Color.rgb(0, 120, 255, 0.42) : Color.rgb(0, 120, 255, 0.28));
     }
 
     private void updateCamera() {
@@ -1172,13 +1127,13 @@ public class SwampDungeon {
     }
 
     private static double clamp(double v, double lo, double hi) {
-        if (v < lo) {
-            return lo;
+        double result = v;
+        if (result < lo) {
+            result = lo;
+        } else if (result > hi) {
+            result = hi;
         }
-        if (v > hi) {
-            return hi;
-        }
-        return v;
+        return result;
     }
 
     private void clearInputState() {
@@ -1520,38 +1475,41 @@ public class SwampDungeon {
     }
 
     public void drawBossDungeon() {
-        if (!game.getHero().existsCompletedTask(game.getTasks().get(3))) {
+        boolean shouldShowBoss = true;
+        try {
+            shouldShowBoss = !game.getHero().existsCompletedTask(game.getTasks().get(3));
+        } catch (Throwable ignored) {
+            shouldShowBoss = true;
+        }
+
+        if (shouldShowBoss) {
+            if (bossView == null) {
+                try {
+                    java.io.InputStream is = getClass().getResourceAsStream("/Resources/sprites/Monsters/swampBoss01.png");
+                    if (is != null) {
+                        Image img = new Image(is);
+                        bossView = new ImageView(img);
+                        bossView.setPreserveRatio(true);
+                        bossView.setFitWidth(200);
+                        bossView.setFitHeight(200);
+                        bossView.setMouseTransparent(true);
+                        bossView.setLayoutX(512.5474079999998);
+                        bossView.setLayoutY(243.2034720000001);
+                        bossView.getProperties().put("tag", "swamp_boss");
+                    } else {
+                        System.err.println("Imagen del boss no encontrada: /Resources/sprites/Monsters/swampBoss01.png");
+                    }
+                } catch (Throwable t) {
+                    System.err.println("No se pudo cargar la imagen del boss: " + t.getMessage());
+                }
+            }
+
+            if (bossView != null && !world.getChildren().contains(bossView)) {
+                world.getChildren().add(bossView);
+            }
             if (bossView != null) {
-                if (!world.getChildren().contains(bossView)) {
-                    world.getChildren().add(bossView);
-                }
                 bossView.toFront();
-                return;
             }
-
-            try {
-                Image img = new Image(getClass().getResourceAsStream("/Resources/sprites/Monsters/swampBoss01.png"));
-                bossView = new ImageView(img);
-
-                bossView.setPreserveRatio(true);
-                bossView.setFitWidth(200);
-                bossView.setFitHeight(200);
-                bossView.setMouseTransparent(true);
-
-                bossView.setLayoutX(512.5474079999998);
-                bossView.setLayoutY(243.2034720000001);
-
-                bossView.getProperties().put("tag", "swamp_boss");
-
-                if (!world.getChildren().contains(bossView)) {
-                    world.getChildren().add(bossView);
-                }
-                bossView.toFront();
-
-            } catch (Throwable t) {
-                System.err.println("No se pudo cargar la imagen del boss: " + t.getMessage());
-            }
-
         } else {
             if (bossView != null) {
                 try {
