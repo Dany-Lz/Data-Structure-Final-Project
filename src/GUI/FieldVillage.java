@@ -2,6 +2,8 @@ package GUI;
 
 import Runner.MainScreen;
 import Characters.Hero;
+import Characters.NPC;
+import Characters.Villager;
 import Logic.Game;
 import com.almasb.fxgl.dsl.FXGL;
 import javafx.animation.FadeTransition;
@@ -28,6 +30,7 @@ import java.net.URL;
 import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.List;
+import java.util.Random;
 import java.util.Set;
 
 public class FieldVillage {
@@ -39,6 +42,7 @@ public class FieldVillage {
     private MediaPlayer music;
 
     private final ImageView heroView;
+    private Random rnd;
     private final double HERO_W = 48;
     private final double HERO_H = 48;
     private final double HERO_SPEED = 180.0;
@@ -70,9 +74,14 @@ public class FieldVillage {
     }
     private Direction currentDirection = Direction.NONE;
 
+    // para los NPC
+    private final List<NPC> npcs = new ArrayList<>();
+    private final List<ImageView> npcNodes = new ArrayList<>();
+    private final List<Rectangle2D> npcCollisionRects = new ArrayList<>();
+
     // Tipos de obstáculos para la aldea
     private enum ObstacleType {
-        HOUSE, TREE, WELL, FENCE, BUSH, EXIT, BLOCK, DOOR
+        HOUSE, TREE, WELL, FENCE, BUSH, EXIT, BLOCK, DOOR, NPC
     }
 
     // Clase interna para obstáculos
@@ -91,6 +100,7 @@ public class FieldVillage {
 
     public FieldVillage(Game game) {
         this.game = game;
+        this.rnd = new Random();
         root = new StackPane();
         root.setPrefSize(VIEW_W, VIEW_H);
 
@@ -113,7 +123,6 @@ public class FieldVillage {
         });
     }
 
-    // ---------------- public API ----------------
     public StackPane getRoot() {
         return root;
     }
@@ -134,6 +143,10 @@ public class FieldVillage {
 
             // Primero poblar colisiones
             populateVillageObstacles();
+
+            // Cargar NPC
+            addVillagerToList();
+            renderNpcs();
 
             // Luego posicionar al héroe
             positionHeroAtEntrance();
@@ -640,6 +653,80 @@ public class FieldVillage {
         }
     }
 
+    public void addNpc(NPC npc, double x, double y) {
+        boolean shouldAdd = npc != null;
+
+        ImageView iv = null;
+        Rectangle2D rect = null;
+
+        if (shouldAdd) {
+
+            npcs.add(npc);
+            iv = new ImageView(npc.getSpritePath());
+            iv.setPreserveRatio(true);
+            iv.setFitWidth(80);
+            iv.setFitHeight(80);
+            iv.setMouseTransparent(true);
+            iv.setLayoutX(x);
+            iv.setLayoutY(y);
+
+            rect = new Rectangle2D(x, y, iv.getFitWidth(), iv.getFitHeight());
+
+            npcNodes.add(iv);
+            npcCollisionRects.add(rect);
+        }
+
+        if (shouldAdd) {
+            ImageView finalIv = iv;
+            Platform.runLater(() -> {
+                if (finalIv != null && !world.getChildren().contains(finalIv)) {
+                    world.getChildren().add(finalIv);
+                }
+                if (finalIv != null) {
+                    finalIv.toFront();
+                }
+                if (heroView != null) {
+                    heroView.toFront();
+                }
+            });
+        }
+    }
+
+    public Villager findNearbyVillager() {
+        Villager found = null;
+        Rectangle2D heroRect = new Rectangle2D(heroView.getLayoutX(), heroView.getLayoutY(), HERO_W, HERO_H);
+        for (int i = 0; i < npcCollisionRects.size(); i++) {
+            Rectangle2D nr = npcCollisionRects.get(i);
+            boolean intersects = heroRect.intersects(nr);
+            if (intersects) {
+                if (i >= 0 && i < npcs.size() && npcs.get(i) instanceof Villager) {
+                    found = (Villager) npcs.get(i);
+                }
+            }
+
+        }
+
+        return found;
+    }
+
+    public void renderNpcs() {
+        Platform.runLater(() -> {
+            // eliminar nodos antiguos si world fue limpiado
+            world.getChildren().removeIf(n -> npcNodes.contains(n));
+            for (int i = 0; i < npcNodes.size(); i++) {
+                ImageView iv = npcNodes.get(i);
+                Rectangle2D r = npcCollisionRects.get(i);
+                iv.setLayoutX(r.getMinX());
+                iv.setLayoutY(r.getMinY());
+                if (!world.getChildren().contains(iv)) {
+                    world.getChildren().add(iv);
+                }
+                iv.toFront();
+            }
+            heroView.toFront();
+        });
+    }
+
     // ---------------- movimiento y entradas ----------------
     private void positionHeroAtEntrance() {
 
@@ -761,11 +848,39 @@ public class FieldVillage {
                 } else if (currentInteractable != null) {
                     clearInputState();
                     enterInteractable(currentInteractable);
-                }
-            }
+                } else {
 
+                    Villager v = findNearbyVillager();
+
+                    if (v != null) {
+                        if (v.getTask() != null) {
+                            if ((!game.getHero().existsCompletedTask(v.getTask()))) {
+                                switch (v.getName()) {
+                                    case "Morty":
+                                        if (game.getHero().existsPendingTask(v.getTask())) {
+                                            if (game.completeSecondaryQ000()) {
+                                                System.out.println(v.getMessageFromList(1));
+                                            }
+                                        } else {
+                                            game.getHero().addTasks(v.getTask());
+                                            System.out.println(v.getMessageFromList(0));
+                                            System.out.println("A new Mission was added");
+                                        }
+                                        break;
+                                    default:
+                                        throw new AssertionError();
+                                }
+                            }
+                        } else {
+                            System.out.println(v.getMessageFromList(rnd.nextInt(2, 4)));
+                        }
+                    }
+                }
+
+            }
             ev.consume();
-        });
+        }
+        );
 
         root.addEventFilter(KeyEvent.KEY_RELEASED, ev -> {
             KeyCode k = ev.getCode();
@@ -792,6 +907,11 @@ public class FieldVillage {
                 clearInputState();
             }
         });
+    }
+
+    private void addVillagerToList() {
+        addNpc(game.getCharacters().get(26), 444.44570399999924, 533.5147360000008);// Morty 1
+
     }
 
     private void openInventory() {
