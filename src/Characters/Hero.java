@@ -47,7 +47,7 @@ public class Hero implements Serializable {
     public Hero(String name, Weapon weapon, Armor armor, Classes root) {
         setName(name);
         setLife(150);
-        setActualLife(100);
+        setActualLife(150);
         setSpritePath("/Resources/sprites/hero.png");
         setAttack(7);
         setMagic(20);
