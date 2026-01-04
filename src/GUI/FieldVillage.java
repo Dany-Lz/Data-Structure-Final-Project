@@ -302,7 +302,7 @@ public class FieldVillage {
     private ImageView createHeroView() {
         Image img = null;
         try {
-            img = new Image(getClass().getResourceAsStream("/Resources/sprites/hero.png"));
+            img = new Image(getClass().getResourceAsStream(game.getHero().getSpritePath()));
         } catch (Throwable ignored) {
             img = null;
         }
@@ -860,6 +860,8 @@ public class FieldVillage {
                                         if (game.getHero().existsPendingTask(v.getTask())) {
                                             if (game.completeSecondaryQ000()) {
                                                 System.out.println(v.getMessageFromList(1));
+                                            } else {
+                                                System.out.println(v.getMessageFromList(rnd.nextInt(2, 4)));
                                             }
                                         } else {
                                             game.getHero().addTasks(v.getTask());
@@ -868,16 +870,22 @@ public class FieldVillage {
                                         }
                                         break;
                                     default:
-                                        throw new AssertionError();
+                                        System.out.println("You should not see this but anyways, hello my friend.");
                                 }
+
+                            } else {
+                                System.out.println(v.getMessageFromList(rnd.nextInt(2
+                                        , 4)));
                             }
-                        } else {
-                            System.out.println(v.getMessageFromList(rnd.nextInt(2, 4)));
                         }
+                        else {
+                            System.out.println(v.getMessageFromList(rnd.nextInt(0, 4)));
+                        }
+
                     }
                 }
-
             }
+
             ev.consume();
         }
         );
