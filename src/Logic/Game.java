@@ -476,12 +476,16 @@ public class Game {
         //Main Quests
         addTasks(new Task("Explore the Misterious Sky Ruins.", "Search what is hidden in the Sky Island.", "M000", 10000, true));
         addTasks(new Task("Search the Toxic Orb.", "Complete the road of Swamp.", "M001", 1000, true));
-        getTasks().get(1).addReward(getItems().get(19));
+        getTasks().get(1).addReward(getItems().get(19)); // Orbe Toxico
         addTasks(new Task("Search the Lava Orb.", "Complete the road of Volcano.", "M002", 1000, true));
         addTasks(new Task("Battle against the swamp boss.", "Defeat the Swamp Boss Monster to get the toxic orb.", "M003", 0, true));
         addTasks(new Task("Get the Mayor's authorization.", "Talk with Village's Mayor.", "M003", 500, true));
         //Secondary Quests
         addTasks(new Task("Defeat 5 monsters.", "Kill 5 monsters anywhere.", "Q000", 500, false));
+        
+        getTasks().get(5).addReward(getItems().get(18)); // Raspberry
+        getTasks().get(5).addReward(getItems().get(18)); // Raspberry
+                
         addTasks(new Task("Defeat 30 monsters.", "Kill 30 monsters anywhere.", "Q001", 1000, false));
         addTasks(new Task("Heal yourself.", "Use a healing item once.", "Q002", 100, false));
         //Task(String name, String info, String id, int money, boolean mainQuest)
@@ -493,9 +497,9 @@ public class Game {
         //26
         characters.add(new Villager(true, null, "Morty", "/Resources/sprites/NPC/morty.png", tasks.get(5)));
         characters.get(26).getDialogue().add(
-                "Hi!. Troubles with monsters?. If you defeat 5 creatures I'll give you something.");
+                "Hi There! Would you mind if you defeat 5 creatures? I'll give you something special.");
         characters.get(26).getDialogue().add(
-                "Wow, you have defeated 5 monsters!, please receive this reward ... .");
+                "Wow, you have defeated 5 monsters!, please receive some raspberries and some money for the trouble ... .");
         characters.get(26).getDialogue().add(
                 "What a nice day isn't it? .");
         characters.get(26).getDialogue().add(
@@ -537,9 +541,11 @@ public class Game {
 
     public void giveReward(boolean reward, Task t) {
         if (reward) {
+            hero.setMoney(hero.getMoney()+t.getMoney());
             for (Item i : t.getRewards()) {
                 hero.getItems().add(i);
             }
+            
         }
     }
 
@@ -547,6 +553,7 @@ public class Game {
         boolean done = false;
         if (hero.getDefeatedMonsters() >= 5) {
             Task t = searchTask("Q000");
+            giveReward(true, t);
             t.setState(true);
             hero.completeTask(t);
             done = true;
