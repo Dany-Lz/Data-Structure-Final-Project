@@ -48,7 +48,7 @@ public class Hero implements Serializable {
         setName(name);
         setLife(150);
         setActualLife(150);
-        setSpritePath("/Resources/sprites/hero.png");
+        setSpritePath("/Resources/sprites/hero/hero.png");
         setAttack(7);
         setMagic(20);
         setDefense(3);
