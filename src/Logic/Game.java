@@ -10,10 +10,7 @@ import java.io.File;
 import java.io.IOException;
 import java.io.RandomAccessFile;
 import java.time.LocalDateTime;
-import java.util.ArrayDeque;
 import java.util.ArrayList;
-import java.util.Iterator;
-import java.util.Queue;
 
 public class Game {
 
@@ -489,36 +486,41 @@ public class Game {
         addTasks(new Task("Heal yourself.", "Use a healing item once.", "Q002", 100, false));
         //Task(String name, String info, String id, int money, boolean mainQuest)
     }
-    
-    public void createVillagers(){ 
+
+    public void createVillagers() {
         //Town
-        
-        //0
-        characters.add(new Villager(true, null, "Morty", "/Resources/sprites/morty.png", tasks.get(5)));
-        characters.get(0).getDialogue().add(
-        "Hi!. Troubles with monsters?. If you defeat 5 creatures I'll give you something.");
-        characters.get(0).getDialogue().add(
-        "Wow, you have defeated 5 monsters!, please receive this gift: ... .");
-        //1
-        characters.add(new Villager(false, null, "Falco", "/Resources/sprites/falco.png", null));
-        characters.get(1).getDialogue().add(
-        "What a beautiful day.");
-        //2
-        characters.add(new Villager(false, null, "Cat", "/Resources/sprites/cat.png", null));
-        characters.get(2).getDialogue().add(
-        "Meao.");
-        //3
-        characters.add(new Villager(true, items.get(23), "Mayor Giovanni", "/Resources/sprites/mayo.png", null));
-        characters.get(3).getDialogue().add(
-        "Welcome to the town hall! I have a letter for you.");
-        //4
-        characters.add(new Villager(false, null, "Host", "/Resources/sprites/host.png", null));
-        characters.get(4).getDialogue().add(
-        "Enjoy your stay.");
-        //5
-        characters.add(new Villager(false, null, "Merchant", "/Resources/sprites/merchant.png", null));
-        characters.get(5).getDialogue().add(
-        "What can I do for you?.");
+
+        //26
+        characters.add(new Villager(true, null, "Morty", "/Resources/sprites/NPC/morty.png", tasks.get(5)));
+        characters.get(26).getDialogue().add(
+                "Hi!. Troubles with monsters?. If you defeat 5 creatures I'll give you something.");
+        characters.get(26).getDialogue().add(
+                "Wow, you have defeated 5 monsters!, please receive this reward ... .");
+        characters.get(26).getDialogue().add(
+                "What a nice day isn't it? .");
+        characters.get(26).getDialogue().add(
+                "Hello Traveler, all kind of people are welcome to our village .");
+
+        //27
+        characters.add(new Villager(false, null, "Falco", "/Resources/sprites/NPC/falco.png", null));
+        characters.get(27).getDialogue().add(
+                "What a beautiful day.");
+        //28
+        characters.add(new Villager(false, null, "Cat", "/Resources/sprites/NPC/cat.png", null));
+        characters.get(28).getDialogue().add(
+                "Meao.");
+        //29
+        characters.add(new Villager(true, items.get(23), "Mayor Giovanni", "/Resources/sprites/NPC/mayo.png", null));
+        characters.get(29).getDialogue().add(
+                "Welcome to the town hall! I have a letter for you.");
+        //30
+        characters.add(new Villager(false, null, "Host", "/Resources/sprites/NPC/host.png", null));
+        characters.get(30).getDialogue().add(
+                "Enjoy your stay.");
+        //31
+        characters.add(new Villager(false, null, "Merchant", "/Resources/sprites/NPC/merchant.png", null));
+        characters.get(31).getDialogue().add(
+                "What can I do for you?.");
         //Villager(boolean gift, Item giftItem, String name, String sprite, Task task)
     }
 
@@ -541,12 +543,15 @@ public class Game {
         }
     }
 
-    public void completeSecondaryQ000() {
+    public boolean completeSecondaryQ000() {
+        boolean done = false;
         if (hero.getDefeatedMonsters() >= 5) {
             Task t = searchTask("Q000");
             t.setState(true);
             hero.completeTask(t);
+            done = true;
         }
+        return done;
     }
 
     public void completeMainM001() {
