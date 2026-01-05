@@ -45,7 +45,6 @@ public class Game {
         hero.addTasks(tasks.get(0));
         hero.addTasks(tasks.get(1));
         hero.addTasks(tasks.get(2));
-        hero.addTasks(tasks.get(3));
 
     }
 
