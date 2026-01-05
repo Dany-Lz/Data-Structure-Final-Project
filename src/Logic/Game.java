@@ -535,6 +535,10 @@ public class Game {
         characters.get(33).getDialogue().add("Woof.");
         characters.get(33).getDialogue().add("GRRRRRRR.");
         characters.get(33).getDialogue().add("WOOOOOOOOOOOOF");
+        // 34 
+        characters.add(new Villager(false, null, "History Board", "/Resources/sprites/NPC/nothing.png", tasks.getFirst()));
+        characters.get(34).getDialogue().add("Long time ago, an expedition departed to search a Treasure, whose location was in the Sky..."
+                + "Even if everyone saw them go they never returned, leaving a great mistery behind, the treasure is still unknown to people and ready to be collected");
 
     }
 
