@@ -33,7 +33,7 @@ import java.util.Queue;
 import java.util.Random;
 
 public class CombatScreen {
-
+    
     public final StackPane root;
     private final Pane content;
     private final ImageView backgroundView;
@@ -44,7 +44,7 @@ public class CombatScreen {
     private final Pane rightPane;
     private final HBox monstersBox;
     private final HBox actionButtons;
-
+    
     private final Game game;
     private final List<Monster> monsters = new ArrayList<>();
     private final List<ImageView> monsterViews = new ArrayList<>();
@@ -54,7 +54,7 @@ public class CombatScreen {
 // Botones y selección por teclado
     private final List<Button> buttons = new ArrayList<>();
     private int selectedButtonIndex = 0;
-
+    
     private Runnable onExit; // callback opcional al cerrar combate
 
     // Game Over UI
@@ -75,15 +75,15 @@ public class CombatScreen {
 
     // Label para mostrar vida del héroe (actual / total)
     private final Label heroHpLabel = new Label();
-
+    
     public CombatScreen(Game game, String bgPath, String encounter, Hero heroForIcon, boolean bossFight, Boss monster) {
         this.game = game;
         origDefense = game.getHero().getDefense();
-
+        
         if (bossFight) {
             boss = monster;
         }
-
+        
         root = new StackPane();
         root.setPrefSize(800, 600);
 
@@ -97,46 +97,46 @@ public class CombatScreen {
         backgroundView.setPreserveRatio(false);
         backgroundView.setFitWidth(800);
         backgroundView.setFitHeight(600);
-
+        
         content = new Pane();
         content.setPrefSize(800, 600);
-
+        
         leftPane = new Pane();
         leftPane.setPrefSize(220, 600);
         leftPane.setLayoutX(0);
         leftPane.setLayoutY(0);
-
+        
         centerPane = new Pane();
         centerPane.setPrefSize(360, 600);
         centerPane.setLayoutX(220);
         centerPane.setLayoutY(0);
-
+        
         rightPane = new Pane();
         rightPane.setPrefSize(220, 600);
         rightPane.setLayoutX(520);
         rightPane.setLayoutY(0);
-
+        
         monstersBox = new HBox(8);
         monstersBox.setAlignment(Pos.CENTER);
         monstersBox.setPrefWidth(200);
         monstersBox.setLayoutX(10);
         monstersBox.setLayoutY(120);
         rightPane.getChildren().add(monstersBox);
-
+        
         Rectangle bottomPanel = new Rectangle(800, 96, Color.rgb(10, 10, 10, 0.86));
         bottomPanel.setLayoutX(0);
         bottomPanel.setLayoutY(504);
-
+        
         actionButtons = new HBox(12);
         actionButtons.setAlignment(Pos.CENTER);
         actionButtons.setPadding(new Insets(12));
         actionButtons.setLayoutX(0);
         actionButtons.setLayoutY(520);
         actionButtons.setPrefWidth(800);
-
+        
         content.getChildren().addAll(backgroundView, leftPane, centerPane, rightPane, bottomPanel, actionButtons);
         root.getChildren().add(content);
-
+        
         createHeroIcon(heroForIcon);
 
         // Hero HP label: esquina superior derecha
@@ -154,7 +154,7 @@ public class CombatScreen {
             wrapper.getChildren().addAll(mv, name);
             wrapper.setMouseTransparent(true);
             monstersBox.getChildren().add(wrapper);
-
+            
         } else {
             // Generar entre 1 y 3 monstruos y colocarlos en monstersBox
             int count = 1 + rnd.nextInt(3);
@@ -194,17 +194,17 @@ public class CombatScreen {
 
         // Inicializar visual de HP
         updateHeroHpDisplay();
-
+        
         root.setCursor(Cursor.DEFAULT);
         Platform.runLater(() -> root.requestFocus());
     }
-
+    
     public void setBattleMusicPath(String path) {
         if (path != null && !path.isBlank()) {
             this.battleMusicPath = path;
         }
     }
-
+    
     private void setupHeroHpLabel() {
         heroHpLabel.setStyle("-fx-background-color: rgba(0,0,0,0.6); -fx-text-fill: white; -fx-padding: 6 10 6 10; -fx-background-radius: 6;");
         heroHpLabel.setFont(Font.font(13));
@@ -214,20 +214,20 @@ public class CombatScreen {
         heroHpLabel.setTranslateY(12);
         root.getChildren().add(heroHpLabel);
     }
-
+    
     private void updateHeroHpDisplay() {
         Platform.runLater(() -> {
             try {
                 int actual = game.getHero().getActualLife();
                 int max = game.getHero().getLife();
                 heroHpLabel.setText("HP: " + actual + " / " + max);
-
+                
             } catch (Throwable ignored) {
                 heroHpLabel.setText("HP: - / -");
             }
         });
     }
-
+    
     private Monster foundMonster(String encounter) {
         Monster m = null;
         boolean found = false;
@@ -248,14 +248,14 @@ public class CombatScreen {
         }
         return m;
     }
-
+    
     private Monster createBoss(Boss t) {
         Monster m = new Monster(t.getActualWeapon(), t.getAttack(), t.getDefense(), t.getName(),
                 t.getSpritePath(), t.getLife(), t.getActualLife(), t.getExp(), t.getMoney(), t.getEncounter());;
-
+        
         return m;
     }
-
+    
     private ImageView createMonsterView(Monster m) {
         Image img = null;
         try {
@@ -274,48 +274,52 @@ public class CombatScreen {
             iv.setFitHeight(200);
             iv.setSmooth(true);
         }
-
+        
         return iv;
     }
-
+    
     private void createHeroIcon(Hero heroForIcon) {
         Image heroImg = null;
-
+        
         heroImg = new Image(getClass().getResourceAsStream("/Resources/sprites/hero/heroCombat.png"));
-
+        
         ImageView heroIv = new ImageView(heroImg);
         heroIv.setPreserveRatio(true);
         heroIv.setFitWidth(120);
         heroIv.setFitHeight(120);
         heroIv.setSmooth(true);
-
+        
         double leftMargin = 40;
         double paneHeight = leftPane.getPrefHeight();
         double ivHeight = 120;
         double layoutY = (paneHeight - ivHeight) / 2.0;
         heroIv.setLayoutX(leftMargin);
         heroIv.setLayoutY(layoutY);
-
+        
         Text name = new Text((game != null && game.getHero() != null) ? game.getHero().getName() : (heroForIcon != null ? heroForIcon.getName() : "Heroe"));
         name.setFill(Color.WHITE);
         name.setFont(Font.font(14));
         name.setLayoutX(leftMargin);
         name.setLayoutY(layoutY + ivHeight + 18);
-
+        
         leftPane.getChildren().addAll(heroIv, name);
     }
-
+    
     private void createActionButtons() {
         Button bBattle = styledButton("Battle");
         Button bItem = styledButton("Item");
         Button bDefend = styledButton("Defend");
         Button bEscape = styledButton("Escape");
-
+        
         buttons.add(bBattle);
         buttons.add(bItem);
         buttons.add(bDefend);
         buttons.add(bEscape);
-
+        
+        if (boss != null) {
+            bEscape.setDisable(true);
+        }
+        
         bBattle.setOnAction(e -> {
             if (!gameOverActive) {
                 game.getHero().setDefense(origDefense);
@@ -344,11 +348,11 @@ public class CombatScreen {
                 closeCombatAndReturnToMap();
             }
         });
-
+        
         actionButtons.getChildren().addAll(bBattle, bItem, bDefend, bEscape);
         updateButtonSelection();
     }
-
+    
     private Button styledButton(String text) {
         Button b = new Button(text);
         b.setMinWidth(140);
@@ -357,16 +361,16 @@ public class CombatScreen {
         b.setFont(Font.font(14));
         return b;
     }
-
+    
     private void installKeyHandlers() {
         root.addEventFilter(KeyEvent.KEY_PRESSED, ev -> {
             boolean handled = false;
-
+            
             if (gameOverActive) {
                 handled = true;
             } else {
                 KeyCode code = ev.getCode();
-
+                
                 if (code == KeyCode.LEFT) {
                     selectedButtonIndex = Math.max(0, selectedButtonIndex - 1);
                     updateButtonSelection();
@@ -401,13 +405,13 @@ public class CombatScreen {
                     handled = true;
                 }
             }
-
+            
             if (handled) {
                 ev.consume();
             }
         });
     }
-
+    
     private void updateButtonSelection() {
         int i = 0;
         while (i < buttons.size()) {
@@ -427,7 +431,7 @@ public class CombatScreen {
         Monster target = null;
         int tIndex = 0;
         int monstersCount = monsters.size();
-
+        
         while (tIndex < monstersCount && !hadTarget) {
             Monster m = monsters.get(tIndex);
             if (m.getActualLife() > 0) {
@@ -436,12 +440,12 @@ public class CombatScreen {
             }
             tIndex = tIndex + 1;
         }
-
+        
         boolean endCombatNow = false;
         if (!hadTarget) {
             endCombatNow = true;
         }
-
+        
         boolean heroDidDamage = false;
         if (!endCombatNow && target != null) {
             heroDidDamage = game.heroCombat(target);
@@ -453,7 +457,7 @@ public class CombatScreen {
             toastQueue.enqueue(heroMsg);
             updateHeroHpDisplay();
         }
-
+        
         boolean removedOne = false;
         if (!endCombatNow && target != null && game.checkGameOver(target.getActualLife())) {
             game.getHero().sumExp(target.getExp());
@@ -462,13 +466,13 @@ public class CombatScreen {
             removeMonster(target);
             removedOne = true;
         }
-
+        
         if (!endCombatNow) {
             if (monsters.isEmpty()) {
                 endCombatNow = true;
             }
         }
-
+        
         if (endCombatNow) {
             boolean leveled = game.levelUp();
             if (leveled) {
@@ -481,12 +485,12 @@ public class CombatScreen {
             monstersAttackAfterHeroAction();
         }
     }
-
+    
     private void monstersAttackAfterHeroAction() {
         int idx = 0;
         int total = monsters.size();
         boolean heroDied = false;
-
+        
         while (idx < total && !heroDied) {
             Monster m = monsters.get(idx);
             boolean alive = m.getActualLife() > 0;
@@ -498,33 +502,33 @@ public class CombatScreen {
                         : (m.getName() + " Attacked but didn't damaged!");
                 toastQueue.enqueue(msg);
                 updateHeroHpDisplay();
-
+                
                 if (game.checkGameOver(heroHp)) {
                     heroDied = true;
                 }
             }
             idx = idx + 1;
         }
-
+        
         if (heroDied) {
             showGameOver();
         }
     }
-
+    
     private void showGameOver() {
         Platform.runLater(() -> {
             if (gameOverOverlay == null) {
                 gameOverActive = true;
-
+                
                 stopBattleMusic();
-
+                
                 StackPane overlay = new StackPane();
                 overlay.setPrefSize(800, 600);
                 overlay.setStyle("-fx-background-color: rgba(0,0,0,0.85);");
-
+                
                 VBox vbox = new VBox(18);
                 vbox.setAlignment(Pos.CENTER);
-
+                
                 Image goImg = null;
                 try {
                     goImg = new Image(getClass().getResourceAsStream("/Resources/textures/Main/gameOver.png"));
@@ -534,13 +538,13 @@ public class CombatScreen {
                 goView.setPreserveRatio(true);
                 goView.setFitWidth(600);
                 goView.setFitHeight(400);
-
+                
                 Button startBtn = new Button("Start");
                 startBtn.setMinWidth(160);
                 startBtn.setMinHeight(44);
                 startBtn.setStyle("-fx-background-color: linear-gradient(#ff5f6d,#ffc371); -fx-text-fill: white; -fx-font-weight: bold; -fx-background-radius: 6;");
                 startBtn.setFont(Font.font(16));
-
+                
                 startBtn.setOnAction(ev -> {
                     stopGameOverMusic();
                     stopBattleMusic();
@@ -554,22 +558,22 @@ public class CombatScreen {
                     }
                     MainScreen.restoreMenuAndMusic();
                 });
-
+                
                 vbox.getChildren().addAll(goView, startBtn);
                 overlay.getChildren().add(vbox);
-
+                
                 gameOverOverlay = overlay;
-
+                
                 try {
                     FXGL.getGameScene().addUINode(overlay);
                 } catch (Throwable ignored) {
                 }
-
+                
                 playGameOverMusic();
             }
         });
     }
-
+    
     private void removeMonster(Monster m) {
         int idx = monsters.indexOf(m);
         if (idx >= 0) {
@@ -580,7 +584,7 @@ public class CombatScreen {
             }
         }
     }
-
+    
     private void endCombatAndReturnToMap() {
         stopBattleMusic();
         Platform.runLater(() -> {
@@ -593,7 +597,7 @@ public class CombatScreen {
             }
         });
     }
-
+    
     private void closeCombatAndReturnToMap() {
         endCombatAndReturnToMap();
     }
@@ -613,7 +617,7 @@ public class CombatScreen {
         } catch (Throwable ignored) {
         }
     }
-
+    
     private void stopGameOverMusic() {
         try {
             if (gameOverPlayer != null) {
@@ -637,7 +641,7 @@ public class CombatScreen {
                 battleMusic.setVolume(MainScreen.getVolumeSetting());
                 battleMusic.play();
             } else {
-
+                
                 try {
                     Media media = new Media(battleMusicPath);
                     battleMusic = new MediaPlayer(media);
@@ -650,7 +654,7 @@ public class CombatScreen {
         } catch (Throwable ignored) {
         }
     }
-
+    
     private void stopBattleMusic() {
         try {
             if (battleMusic != null) {
@@ -661,11 +665,11 @@ public class CombatScreen {
         } catch (Throwable ignored) {
         }
     }
-
+    
     public void setOnExit(Runnable onExit) {
         this.onExit = onExit;
     }
-
+    
     public void show() {
         Platform.runLater(() -> {
             try {
@@ -675,14 +679,14 @@ public class CombatScreen {
             root.requestFocus();
         });
     }
-
+    
     private class ToastQueue {
-
+        
         private final Queue<String> q = new ArrayDeque<>();
         private boolean showing = false;
         private final double DURATION_SECONDS = 1.2;
         private final double FADE_SECONDS = 0.22;
-
+        
         public synchronized void enqueue(String msg) {
             q.offer(msg == null ? "" : msg);
             if (!showing) {
@@ -690,43 +694,43 @@ public class CombatScreen {
                 Platform.runLater(this::showNext);
             }
         }
-
+        
         private void showNext() {
             String msg = q.poll();
             if (msg == null) {
                 showing = false;
                 return;
             }
-
+            
             Label lbl = new Label(msg);
             lbl.setStyle("-fx-background-color: rgba(0,0,0,0.75); -fx-text-fill: white; -fx-padding: 10 16 10 16; -fx-background-radius: 8; -fx-font-size: 13;");
             lbl.setOpacity(0.0);
-
+            
             StackPane container = new StackPane(lbl);
             container.setPickOnBounds(false);
             container.setMouseTransparent(true);
             container.setPrefSize(800, 600);
-
+            
             StackPane.setAlignment(lbl, Pos.BOTTOM_CENTER);
             lbl.setTranslateY(-72);
-
+            
             try {
                 if (root != null) {
                     root.getChildren().add(container);
                 }
             } catch (Throwable ignored) {
             }
-
+            
             FadeTransition fadeIn = new FadeTransition(javafx.util.Duration.seconds(FADE_SECONDS), lbl);
             fadeIn.setFromValue(0.0);
             fadeIn.setToValue(1.0);
-
+            
             PauseTransition pause = new PauseTransition(javafx.util.Duration.seconds(DURATION_SECONDS));
-
+            
             FadeTransition fadeOut = new FadeTransition(javafx.util.Duration.seconds(FADE_SECONDS), lbl);
             fadeOut.setFromValue(1.0);
             fadeOut.setToValue(0.0);
-
+            
             fadeOut.setOnFinished(ev -> {
                 try {
                     root.getChildren().remove(container);
@@ -734,7 +738,7 @@ public class CombatScreen {
                 }
                 Platform.runLater(this::showNext);
             });
-
+            
             SequentialTransition seq = new SequentialTransition(fadeIn, pause, fadeOut);
             seq.play();
         }

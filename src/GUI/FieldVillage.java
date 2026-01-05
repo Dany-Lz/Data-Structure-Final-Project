@@ -1413,13 +1413,11 @@ public class FieldVillage {
                 ftIn.setToValue(1.0);
                 ftIn.play();
 
-                // pedir foco al overlay y al botón Ok
                 Platform.runLater(() -> {
                     modalOverlay.requestFocus();
                     okBtn.requestFocus();
                 });
 
-                // añadir handler temporal a la Scene para garantizar captura de ENTER/Escape
                 Platform.runLater(() -> {
                     javafx.scene.Scene scene = root.getScene();
                     if (scene != null) {
@@ -1463,7 +1461,6 @@ public class FieldVillage {
             } catch (Throwable ignored) {
             }
 
-            // eliminar handler de Scene si fue añadido
             try {
                 Object handlerObj = modalOverlay.getProperties().remove("sceneKeyHandler");
                 if (handlerObj instanceof javafx.event.EventHandler) {
