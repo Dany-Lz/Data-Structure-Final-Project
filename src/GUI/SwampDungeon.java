@@ -3,7 +3,6 @@ package GUI;
 import Characters.Boss;
 import Characters.Hero;
 import Logic.Game;
-import Misc.Task;
 import Runner.MainScreen;
 import com.almasb.fxgl.dsl.FXGL;
 import java.net.URL;
@@ -852,7 +851,7 @@ public class SwampDungeon {
                 if (checkOrbTrigger()) {
                     game.completeMainM001();
                     collectOrb();
-                    showBottomDialogRPG("Item Obtained","You have received the Toxic Orb", null);
+                    showBottomDialogRPG("Item Obtained", "You have received the Toxic Orb", null);
                 }
 
                 if (beforeDungeon) {

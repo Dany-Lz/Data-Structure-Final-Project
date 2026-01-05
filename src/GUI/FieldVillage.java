@@ -875,8 +875,12 @@ public class FieldVillage {
                                             game.getHero().addTasks(v.getTask());
                                             showBottomDialogRPG("Misión añadida", v.getMessageFromList(0), "/Resources/sprites/NPC/mortyFace.png");
                                         }
+
+                                    } else if ("History Board".equalsIgnoreCase(v.getName())) {
+                                        showBottomDialogRPG("History Board", v.getMessageFromList(0), null);
+                                        
                                     } else {
-                                        showBottomDialogRPG("NPC", "Hola, amigo.", null);
+                                        showBottomDialogRPG("NPC", "You shouldnt see this, but hey how are you?", null);
                                     }
                                 } else {
                                     showBottomDialogRPG(v.getName(), v.getMessageFromList(rnd.nextInt(2, 4)), null);
@@ -955,6 +959,7 @@ public class FieldVillage {
                 ObstacleType.NPC,
                 "Dog"
         ));
+        addNpc(game.getCharacters().get(34), 691.6607640000009, 70.4151640000008);// Mural
 
     }
 
