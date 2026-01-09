@@ -1133,6 +1133,7 @@ public class CastleSecondFloor {
                 next.showWithLoading(null, () -> {
                     Platform.runLater(() -> {
                         FXGL.getGameScene().addUINode(root);
+                        startDungeonMusic("/Resources/music/skyFinalDungeon.mp3");
                         root.requestFocus();
                         startMover();
                     });

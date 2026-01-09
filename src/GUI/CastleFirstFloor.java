@@ -130,7 +130,7 @@ public class CastleFirstFloor {
             showLoading(true);
 
             boolean imageOk = loadBackgroundImage("/Resources/textures/skyDungeon/1stFloor.png");
-             boolean musicOk = startDungeonMusic("/Resources/music/skyFinalDungeon.mp3");
+            boolean musicOk = startDungeonMusic("/Resources/music/skyFinalDungeon.mp3");
             if (!game.getHero().existsCompletedTask(game.getTasks().get(8)) && !game.getHero().existsPendingTask(game.getTasks().get(8))) {
                 game.getHero().addTasks(game.searchTask("M010"));
             }
@@ -1094,6 +1094,7 @@ public class CastleFirstFloor {
                 next.showWithLoading(null, () -> {
                     Platform.runLater(() -> {
                         FXGL.getGameScene().addUINode(root);
+                        startDungeonMusic("/Resources/music/skyFinalDungeon.mp3");
                         root.requestFocus();
                         startMover();
                     });

@@ -518,7 +518,6 @@ public class SkyDungeon {
 
     public void startMover() {
         if (mover != null) {
-            System.out.println("Mover started");
             mover.start();
         }
     }
@@ -802,15 +801,24 @@ public class SkyDungeon {
                 clearInputState();
                 hide(); // oculta SkyDungeon
 
-                // Abre la siguiente pantalla (ejemplo: CastleInside)
                 CastleFirstFloor castle = new CastleFirstFloor(game);
                 castle.showWithLoading(null, () -> {
                     Platform.runLater(() -> {
-                        FXGL.getGameScene().addUINode(root);
+                        try {
+                            // Volver a añadir la UI del SkyDungeon
+                            FXGL.getGameScene().addUINode(root);
+                        } catch (Throwable ignored) {
+                        }
+
+                        // Reiniciar la música del SkyDungeon
+                        startDungeonMusic("/Resources/music/skyFinalDungeon.mp3");
+
+                        // Reanudar movimiento y foco
                         root.requestFocus();
                         startMover();
                     });
                 });
+
             }
         }
     }
