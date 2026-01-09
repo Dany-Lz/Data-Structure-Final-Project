@@ -640,7 +640,7 @@ public class MainScreen extends GameApplication {
                                 updateCursorSmooth();
                             } else {
                                 showBlackModal("Savefile was not created!", "The savefile could not be created", null);
-                               
+
                             }
                         }
                     }
@@ -789,6 +789,24 @@ public class MainScreen extends GameApplication {
                             double startY = 1200.0;
                             swamp.showWithLoading(() -> {
                                 Platform.runLater(() -> swamp.setHeroPosition(startX, startY));
+                            }, () -> {
+                                Platform.runLater(() -> {
+                                    currentMapScreen.show();
+                                    if (h.getLastLocation() == Hero.Location.MAP) {
+                                        currentMapScreen.setHeroPosition(h.getLastPosX(), h.getLastPosY());
+                                    } else {
+                                        currentMapScreen.resetHeroToCenter();
+                                    }
+                                    currentMapScreen.drawDebugObstacles();
+                                });
+                            });
+                        }
+                        case SKY_DUNGEON -> {
+                            SkyDungeon sky = new SkyDungeon(game);
+                            double startX = 717.7351259999998;
+                            double startY = 327.4755660000007;
+                            sky.showWithLoading(() -> {
+                                Platform.runLater(() -> sky.setHeroPosition(startX, startY));
                             }, () -> {
                                 Platform.runLater(() -> {
                                     currentMapScreen.show();
