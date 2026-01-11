@@ -293,24 +293,76 @@ public class VolcanoCastleInterior {
     private void populateVolcanoObstacles() {
         obstacles.clear();
 
-        double[][] COLLISIONS = new double[][]{};
-
-        int idx = 1;
-        for (double[] p : COLLISIONS) {
             obstacles.add(new Obstacle(
-                    new Rectangle2D(p[0], p[1], 40, 40),
+                    new Rectangle2D(0,0, 1200, 100),
                     ObstacleType.BLOCK,
-                    "VolcanoCollision" + idx
+                    "pared" 
             ));
-            idx++;
-        }
+            obstacles.add(new Obstacle(
+                    new Rectangle2D(535, 143.3083356599997, 30, 40),
+                    ObstacleType.BLOCK,
+                    "columnaV" 
+            ));
+            obstacles.add(new Obstacle(
+                    new Rectangle2D(630,145, 30, 40),
+                    ObstacleType.BLOCK,
+                    "columnaV1" 
+            ));
+             obstacles.add(new Obstacle(
+                    new Rectangle2D(0.0, 143.31720335999967, 480, 80),
+                    ObstacleType.BLOCK,
+                    "monumento" 
+            ));
+              obstacles.add(new Obstacle(
+                    new Rectangle2D(730,145, 500, 80),
+                    ObstacleType.BLOCK,
+                    "monumento1" 
+            ));
+              double[][] COLLISIONS = new double[][]{
+                  {150, 293.02329084},{245, 293.02329084}, 
+                  {205, 390.9809615999999}, {103.92846366000207, 532.10353704}, 
+                  {245, 532.10353704}, {918, 290.1903952200001},
+                  {966.23561808, 398.38800912000096},{1056.0463717800017, 291.2353180799995},
+                  {1055, 531.9494588399999}, {915, 531.9494588399999}
+               };
+
+            int idx = 1;
+            for (double[] p : COLLISIONS) {
+                obstacles.add(new Obstacle(
+                    new Rectangle2D(p[0], p[1], 30, 70),
+                    ObstacleType.BLOCK,
+                    "SkyCollision" + idx
+                    ));
+                idx++;
+            }
+            
+             obstacles.add(new Obstacle(
+                    new Rectangle2D(55,393, 80, 65),
+                    ObstacleType.BLOCK,
+                    "drago" 
+            ));
+              obstacles.add(new Obstacle(
+                    new Rectangle2D(1065,393, 80, 65),
+                    ObstacleType.BLOCK,
+                    "dragon1" 
+            ));
+               obstacles.add(new Obstacle(
+                    new Rectangle2D(490, 686.3831955600002, 23, 90),
+                    ObstacleType.BLOCK,
+                    "faro" 
+            ));
+                obstacles.add(new Obstacle(
+                    new Rectangle2D( 685,686.3831955600002,25 ,90),
+                    ObstacleType.BLOCK,
+                    "faro1" 
+            ));
     }
 
     // ---------------- movimiento y entradas ----------------
     private void positionHeroAtEntrance() {
 
-        double startX = 868.6131420000022;
-        double startY = 1143.106434;
+        double startX = 577.6885702200026;
+        double startY = 816.0;
         heroView.setLayoutX(startX);
         heroView.setLayoutY(startY);
         updateCamera();

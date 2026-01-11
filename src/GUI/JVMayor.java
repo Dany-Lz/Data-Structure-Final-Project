@@ -12,6 +12,8 @@ import javafx.application.Platform;
 import javafx.geometry.Point2D;
 import javafx.geometry.Rectangle2D;
 import javafx.geometry.Pos;
+import javafx.scene.control.Alert;
+import javafx.scene.control.ButtonType;
 import javafx.scene.image.Image;
 import javafx.scene.image.ImageView;
 import javafx.scene.input.KeyCode;
@@ -29,6 +31,7 @@ import java.net.URL;
 import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.List;
+import java.util.Optional;
 import java.util.Set;
 import javafx.animation.TranslateTransition;
 import javafx.geometry.Bounds;
@@ -316,7 +319,12 @@ public class JVMayor {
         obstacles.clear();
 
         // Agrega al menos un área de salida (puerta)
-  
+        obstacles.add(new Obstacle(
+                new Rectangle2D(350, 570, 100, 50),
+                ObstacleType.EXIT,
+                "puertaSalida"
+        ));
+
         obstacles.add(new Obstacle(
                 new Rectangle2D(0, 0, 820, 110),
                 ObstacleType.BLOCK,

@@ -208,36 +208,39 @@ public class VolcanoDungeon {
     }
 
     private boolean loadBackgroundImage(String path) {
-        boolean ret = false;
-        try {
-            Image img = new Image(getClass().getResourceAsStream(path));
-            backgroundView = new ImageView(img);
-            backgroundView.setPreserveRatio(false);
-            backgroundView.setSmooth(true);
+    boolean ret = false;
+    try {
+        Image img = new Image(getClass().getResourceAsStream(path));
+        backgroundView = new ImageView(img);
 
-            worldW = img.getWidth() > 0 ? img.getWidth() : VIEW_W;
-            worldH = img.getHeight() > 0 ? img.getHeight() : VIEW_H;
+        // Forzar a llenar toda la ventana (sin mantener proporción)
+        backgroundView.setPreserveRatio(false);
+        backgroundView.setSmooth(true);
+        backgroundView.setFitWidth(VIEW_W);
+        backgroundView.setFitHeight(VIEW_H);
 
-            backgroundView.setFitWidth(worldW);
-            backgroundView.setFitHeight(worldH);
+        // Ajustar el mundo al tamaño de la vista
+        worldW = VIEW_W;
+        worldH = VIEW_H;
+        world.setPrefSize(worldW, worldH);
 
-            world.setPrefSize(worldW, worldH);
-            world.getChildren().clear();
-            world.getChildren().add(backgroundView);
+        world.getChildren().clear();
+        world.getChildren().add(backgroundView);
 
-            if (!world.getChildren().contains(heroView)) {
-                world.getChildren().add(heroView);
-            } else {
-                heroView.toFront();
-            }
-            ret = true;
-        } catch (Throwable t) {
-            Text err = new Text("No se pudo cargar la imagen");
-            err.setStyle("-fx-font-size: 16px; -fx-fill: #ffdddd;");
-            root.getChildren().add(err);
+        if (!world.getChildren().contains(heroView)) {
+            world.getChildren().add(heroView);
+        } else {
+            heroView.toFront();
         }
-        return ret;
+        ret = true;
+    } catch (Throwable t) {
+        Text err = new Text("No se pudo cargar la imagen del Volcán.");
+        err.setStyle("-fx-font-size: 16px; -fx-fill: #ffdddd;");
+        root.getChildren().add(err);
     }
+    return ret;
+}
+
 
     private boolean startDungeonMusic(String path) {
         boolean started = false;
@@ -288,7 +291,74 @@ public class VolcanoDungeon {
     private void populateCastleObstacles() {
         obstacles.clear();
 
-        double[][] COLLISIONS = new double[][]{};
+        double[][] COLLISIONS = new double[][]{
+            //lava
+            {77.677381999999994, 0.0},
+            {77.677381999999994, 40.0},
+            {77.677381999999994, 80.0},
+            {77.677381999999994, 120.0},
+            {115.677381999999994, 148.0},
+            {150.677381999999994, 188.0},
+            {190.677381999999994, 188.0},
+            {190.677381999999994, 220.0},
+            {190.677381999999994, 260.0},
+            {190.677381999999994, 300.0},
+            {230.677381999999994, 340.0},
+            {270.677381999999994, 380.0},
+            {310.677381999999994, 380.0},
+            {340.677381999999994, 380.0},
+            {340.677381999999994, 420.0},
+            {340.677381999999994, 460.0},
+            {340.677381999999994, 480.0},
+            {300.677381999999994, 480.0},
+            {260.677381999999994, 480.0},
+            {220.677381999999994, 440.0},
+            {180.677381999999994, 400.0},
+            {140.677381999999994, 400.0},
+            {120.677381999999994, 400.0},
+            {80.677381999999994, 440.0},
+            {80.677381999999994, 480.0},
+            {80.677381999999994, 520.0},
+            {80.677381999999994, 560.0},
+            {273.29193199999935, 262.86739400000016},
+            {548.5359859999999, 390.5738959999999},
+            {600.245902, 350.54233600000043},
+            {548.5359859999999, 430.5738959999999},
+            {548.5359859999999, 470.5738959999999},
+            {548.5359859999999, 490.5738959999999},
+            {588.5359859999999, 490.5738959999999},
+            {625.5359859999999, 490.5738959999999},
+            {625.5359859999999, 450.5738959999999},
+            {625.5359859999999, 410.5738959999999},
+            {663.5359859999999, 370.5738959999999},
+            {663.5359859999999, 330.5738959999999},
+            {703.5359859999999, 290.5738959999999},
+            {743.5359859999999, 250.5738959999999},
+            
+            //rocas camino
+            {590.9176799999984, 270.4184319999998},
+            {554.9176799999984, 227.4184319999998},
+            {554.9176799999984, 180.4184319999998},
+            {554.9176799999984, 140.4184319999998},
+            {554.9176799999984, 100.4184319999998},
+            {548.9176799999984, 60.4184319999998},
+            {540.9176799999984, 40.4184319999998},
+            
+            {350.51289800000006, 215.2297240000001},
+            {325.51289800000006, 190.2297240000001},
+            {340.51289800000006, 150.2297240000001},
+            {345.51289800000006, 110.2297240000001},
+            {345.51289800000006, 90.2297240000001},
+            {345.51289800000006, 50.2297240000001}, 
+            {345.51289800000006, 10.2297240000001},
+             
+            {430.2840279999998, 80.80925999999999},
+            {450.2840279999998, 80.80925999999999},
+            {430.2840279999998, 130.80925999999999},
+            {450.2840279999998, 130.80925999999999},
+            {430.2840279999998, 170.80925999999999},
+            {450.2840279999998, 170.80925999999999},
+        };
 
         int idx = 1;
         for (double[] p : COLLISIONS) {
@@ -327,8 +397,8 @@ public class VolcanoDungeon {
     // ---------------- movimiento y entradas ----------------
     private void positionHeroAtEntrance() {
         // Ajusta estas coordenadas al punto de entrada real del primer piso
-        double startX = 121.40199400000095;
-        double startY = 0.0;
+        double startX = 428.31;
+        double startY =552;
         heroView.setLayoutX(startX);
         heroView.setLayoutY(startY);
         updateCamera();

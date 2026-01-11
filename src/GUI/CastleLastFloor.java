@@ -3,6 +3,7 @@ package GUI;
 import Characters.Boss;
 import Characters.Hero;
 import Logic.Game;
+import Misc.Task;
 import Runner.MainScreen;
 import com.almasb.fxgl.dsl.FXGL;
 import java.net.URL;
@@ -45,17 +46,22 @@ public class CastleLastFloor {
     private final double HERO_SPEED = 180.0;
     private final Set<KeyCode> keys = new HashSet<>();
     private AnimationTimer mover;
+    private Rectangle orbNode = null;
+    private Rectangle2D orbTrigger = null;
+    private Text orbHintText = null;
 
     private final double VIEW_W = 800;
     private final double VIEW_H = 600;
     private double worldW = VIEW_W;
     private double worldH = VIEW_H;
 
+    private boolean onStartRect = false;
     private Runnable onExitCallback;
     private Rectangle startRect;
     private Rectangle castleRect;
     private final Game game;
 
+    private boolean beforeDungeon = true;
     private ImageView bossView;
 
     // Sistema de colisiones
@@ -71,7 +77,7 @@ public class CastleLastFloor {
     public enum Direction {
         NONE, N, NE, E, SE, S, SW, W, NW
     }
-    private final Direction currentDirection = Direction.NONE;
+    private Direction currentDirection = Direction.NONE;
 
     // Clase interna para obstáculos
     private static class Obstacle {
@@ -235,22 +241,6 @@ public class CastleLastFloor {
         return ret;
     }
 
-    private ImageView createHeroView() {
-        Image img;
-        try {
-            img = new Image(getClass().getResourceAsStream(game.getHero().getSpritePath()));
-        } catch (Throwable ignored) {
-            img = null;
-        }
-        ImageView iv = new ImageView(img);
-        iv.setPreserveRatio(true);
-        iv.setFitWidth(HERO_W);
-        iv.setFitHeight(HERO_H);
-        iv.setMouseTransparent(true);
-        return iv;
-    }
-
-    //--------------------Musica---------------------------------------
     private boolean startDungeonMusic(String path) {
         boolean started = false;
         try {
@@ -280,40 +270,23 @@ public class CastleLastFloor {
         } catch (Throwable ignored) {
         }
     }
-    
-    public void startMapMusic() {
-        try {
-            stopMapMusic();
-            URL res = getClass().getResource("/Resources/music/skyFinalDungeon.mp3");
-            boolean hasRes = res != null;
-            if (hasRes) {
-                Media media = new Media(res.toExternalForm());
-                music = new MediaPlayer(media);
-                music.setCycleCount(MediaPlayer.INDEFINITE);
-                music.setVolume(MainScreen.getVolumeSetting());
-                music.play();
 
-                AudioManager.register(music);
-            }
+    private ImageView createHeroView() {
+        Image img;
+        try {
+            img = new Image(getClass().getResourceAsStream(game.getHero().getSpritePath()));
         } catch (Throwable ignored) {
+            img = null;
         }
+        ImageView iv = new ImageView(img);
+        iv.setPreserveRatio(true);
+        iv.setFitWidth(HERO_W);
+        iv.setFitHeight(HERO_H);
+        iv.setMouseTransparent(true);
+        return iv;
     }
 
-    public void stopMapMusic() {
-        try {
-            boolean exists = music != null;
-            if (exists) {
-                AudioManager.unregister(music);
-                music.stop();
-                music.dispose();
-                music = null;
-            }
-        } catch (Throwable ignored) {
-        }
-    }
-
-
-    // ---------------- colisiones --------------------------------
+    // ---------------- colisiones ----------------
     private void populateCastleObstacles() {
         obstacles.clear();
 
@@ -656,9 +629,9 @@ public class CastleLastFloor {
         }
     }
 
-    // ---------------- movimiento y entradas -----------------------------
+    // ---------------- movimiento y entradas ----------------
     private void positionHeroAtEntrance() {
-
+        // Ajusta estas coordenadas al punto de entrada real del primer piso
         double startX = 121.40199400000095;
         double startY = 0.0;
         heroView.setLayoutX(startX);
@@ -882,7 +855,6 @@ public class CastleLastFloor {
 
     private void moveHero(double dx, double dy) {
         boolean proceed = true;
-
         if (heroView == null) {
             proceed = false;
         }
@@ -905,12 +877,12 @@ public class CastleLastFloor {
 
         if (proceed && obstacles != null) {
             for (Obstacle ob : obstacles) {
-                if (ob != null && ob.collisionRect != null) {
-                    if (heroRect.intersects(ob.collisionRect)) {
-                        collision = true;
-
-                    }
-
+                if (ob == null || ob.collisionRect == null) {
+                    continue;
+                }
+                if (heroRect.intersects(ob.collisionRect)) {
+                    collision = true;
+                    break;
                 }
             }
         }
@@ -919,6 +891,7 @@ public class CastleLastFloor {
             heroView.setLayoutX(proposedX);
             heroView.setLayoutY(proposedY);
         } else if (proceed) {
+
             Rectangle2D heroRectX = new Rectangle2D(proposedX, curY, HERO_W, HERO_H);
             Rectangle2D heroRectY = new Rectangle2D(curX, proposedY, HERO_W, HERO_H);
 
@@ -927,27 +900,31 @@ public class CastleLastFloor {
 
             if (obstacles != null) {
                 for (Obstacle ob : obstacles) {
-                    if (ob != null && ob.collisionRect != null) {
-                        if (heroRectX.intersects(ob.collisionRect)) {
-                            canMoveX = false;
-                        }
-                        if (heroRectY.intersects(ob.collisionRect)) {
-                            canMoveY = false;
-                        }
+                    if (ob == null || ob.collisionRect == null) {
+                        continue;
+                    }
+                    if (heroRectX.intersects(ob.collisionRect)) {
+                        canMoveX = false;
+                    }
+                    if (heroRectY.intersects(ob.collisionRect)) {
+                        canMoveY = false;
+                    }
+                    if (!canMoveX && !canMoveY) {
+                        break;
                     }
                 }
-
-                if (canMoveX) {
-                    heroView.setLayoutX(proposedX);
-                }
-                if (canMoveY) {
-                    heroView.setLayoutY(proposedY);
-                }
             }
 
-            if (proceed) {
-                updateCamera();
+            if (canMoveX) {
+                heroView.setLayoutX(proposedX);
             }
+            if (canMoveY) {
+                heroView.setLayoutY(proposedY);
+            }
+        }
+
+        if (proceed) {
+            updateCamera();
         }
     }
 
@@ -984,7 +961,37 @@ public class CastleLastFloor {
         keys.clear();
     }
 
-    //------------------Triggers y obstaculos---------------------
+    public void startMapMusic() {
+        try {
+            stopMapMusic();
+            URL res = getClass().getResource("/Resources/music/skyFinalDungeon.mp3");
+            boolean hasRes = res != null;
+            if (hasRes) {
+                Media media = new Media(res.toExternalForm());
+                music = new MediaPlayer(media);
+                music.setCycleCount(MediaPlayer.INDEFINITE);
+                music.setVolume(MainScreen.getVolumeSetting());
+                music.play();
+
+                AudioManager.register(music);
+            }
+        } catch (Throwable ignored) {
+        }
+    }
+
+    public void stopMapMusic() {
+        try {
+            boolean exists = music != null;
+            if (exists) {
+                AudioManager.unregister(music);
+                music.stop();
+                music.dispose();
+                music = null;
+            }
+        } catch (Throwable ignored) {
+        }
+    }
+
     private void drawDebugObstacles() {
 
         if (startRect != null) {

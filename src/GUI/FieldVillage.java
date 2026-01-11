@@ -836,11 +836,6 @@ public class FieldVillage {
                     clearInputState();
                     openInventory();
                 }
-                if (k == KeyCode.O) {
-                    game.getHero().completeTask(game.searchTask("M001"));
-                    game.getHero().completeTask(game.searchTask("M002"));
-                    System.out.println("Both Main Missions were completed");
-                }
 
                 if (k == KeyCode.ENTER) {
                     if (onStartRect) {
@@ -887,7 +882,7 @@ public class FieldVillage {
 
                                     } else if ("History Board".equalsIgnoreCase(v.getName())) {
                                         showBottomDialogRPG("History Board", v.getMessageFromList(0), null);
-
+                                        
                                     } else {
                                         showBottomDialogRPG("NPC", "You shouldnt see this, but hey how are you?", null);
                                     }

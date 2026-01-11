@@ -202,37 +202,41 @@ public class VolcanoCastle {
         ft.play();
     }
 
-    private boolean loadBackgroundImage(String path) {
-        boolean ret = false;
-        try {
-            Image img = new Image(getClass().getResourceAsStream(path));
-            backgroundView = new ImageView(img);
-            backgroundView.setPreserveRatio(false);
-            backgroundView.setSmooth(true);
+   private boolean loadBackgroundImage(String path) {
+    boolean ret = false;
+    try {
+        Image img = new Image(getClass().getResourceAsStream(path));
+        backgroundView = new ImageView(img);
 
-            worldW = img.getWidth() > 0 ? img.getWidth() : VIEW_W;
-            worldH = img.getHeight() > 0 ? img.getHeight() : VIEW_H;
+        // Forzar a llenar toda la ventana (sin mantener proporción)
+        backgroundView.setPreserveRatio(false);
+        backgroundView.setSmooth(true);
+        backgroundView.setFitWidth(VIEW_W);
+        backgroundView.setFitHeight(VIEW_H);
 
-            backgroundView.setFitWidth(worldW);
-            backgroundView.setFitHeight(worldH);
+        // Ajustar el mundo al tamaño de la vista
+        worldW = VIEW_W;
+        worldH = VIEW_H;
+        world.setPrefSize(worldW, worldH);
 
-            world.setPrefSize(worldW, worldH);
-            world.getChildren().clear();
-            world.getChildren().add(backgroundView);
+        world.getChildren().clear();
+        world.getChildren().add(backgroundView);
 
-            if (!world.getChildren().contains(heroView)) {
-                world.getChildren().add(heroView);
-            } else {
-                heroView.toFront();
-            }
-            ret = true;
-        } catch (Throwable t) {
-            Text err = new Text("No se pudo cargar la imagen del Volcan.");
-            err.setStyle("-fx-font-size: 16px; -fx-fill: #ffdddd;");
-            root.getChildren().add(err);
+        if (!world.getChildren().contains(heroView)) {
+            world.getChildren().add(heroView);
+        } else {
+            heroView.toFront();
         }
-        return ret;
+        ret = true;
+    } catch (Throwable t) {
+        Text err = new Text("No se pudo cargar la imagen del Volcán.");
+        err.setStyle("-fx-font-size: 16px; -fx-fill: #ffdddd;");
+        root.getChildren().add(err);
     }
+    return ret;
+}
+
+
 
     private boolean startDungeonMusic(String path) {
         boolean started = false;
@@ -293,7 +297,24 @@ public class VolcanoCastle {
     private void populateVolcanoObstacles() {
         obstacles.clear();
 
-        double[][] COLLISIONS = new double[][]{};
+        double[][] COLLISIONS = new double[][]{
+            {270.999406, 370.07943600000027},
+            {270.999406, 410.07943600000027},
+            {270.999406, 450.07943600000027},
+            {270.999406, 490.07943600000027},
+            {270.999406, 500.07943600000027},
+            {270.999406, 540.07943600000027},
+            {450.4271520000006, 364.8920699999997},
+            {450.4271520000006, 400.8920699999997},
+            {450.4271520000006, 430.8920699999997},
+            {450.4271520000006, 470.8920699999997},
+            {450.4271520000006, 500.8920699999997},
+            {450.4271520000006, 530.8920699999997},
+            {300.999406, 310.07943600000027},
+            {340.999406, 310.07943600000027},
+            {370.999406, 310.7943600000027},
+            {410.999406, 310.07943600000027},
+        };
 
         int idx = 1;
         for (double[] p : COLLISIONS) {
@@ -309,8 +330,8 @@ public class VolcanoCastle {
     // ---------------- movimiento y entradas ----------------
     private void positionHeroAtEntrance() {
 
-        double startX = 868.6131420000022;
-        double startY = 1143.106434;
+        double startX = 354.81;
+        double startY =  552.0;
         heroView.setLayoutX(startX);
         heroView.setLayoutY(startY);
         updateCamera();
