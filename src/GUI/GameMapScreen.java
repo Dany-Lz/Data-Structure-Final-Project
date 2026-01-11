@@ -405,6 +405,7 @@ public class GameMapScreen {
             } else if (k == KeyCode.D || k == KeyCode.RIGHT) {
                 right = true;
                 heroView.setImage(game.getHero().getSpriteForDirection("Right"));
+
             } else if (k == KeyCode.L) {
                 enterDebugSwamp();
             } else if (k == KeyCode.Q) {

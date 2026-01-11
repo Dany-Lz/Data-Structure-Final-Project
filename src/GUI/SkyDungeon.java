@@ -49,7 +49,6 @@ public class SkyDungeon {
     private double worldW = VIEW_W;
     private double worldH = VIEW_H;
 
-    private boolean onStartRect = false;
     private Runnable onExitCallback;
     private Rectangle startRect;
     private Rectangle castleRect;
@@ -72,7 +71,7 @@ public class SkyDungeon {
         NONE, N, NE, E, SE, S, SW, W, NW
     }
 
-    private Direction currentDirection = Direction.NONE;
+    private final Direction currentDirection = Direction.NONE;
 
     // Clase interna para obstáculos
     private static class Obstacle {
@@ -232,6 +231,22 @@ public class SkyDungeon {
         return ret;
     }
 
+    private ImageView createHeroView() {
+        Image img;
+        try {
+            img = new Image(getClass().getResourceAsStream(game.getHero().getSpritePath()));
+        } catch (Throwable ignored) {
+            img = null;
+        }
+        ImageView iv = new ImageView(img);
+        iv.setPreserveRatio(true);
+        iv.setFitWidth(HERO_W);
+        iv.setFitHeight(HERO_H);
+        iv.setMouseTransparent(true);
+        return iv;
+    }
+
+    //---------------------Musica-------------------------------
     private boolean startDungeonMusic(String path) {
         boolean started = false;
         try {
@@ -271,20 +286,36 @@ public class SkyDungeon {
         } catch (Throwable ignored) {
         }
     }
-
-    private ImageView createHeroView() {
-        Image img;
+    
+    
+    public void startMapMusic() {
         try {
-            img = new Image(getClass().getResourceAsStream(game.getHero().getSpritePath()));
+            stopMapMusic();
+            URL res = getClass().getResource("/Resources/music/skyFinalDungeon.mp3");
+            if (res != null) {
+                Media media = new Media(res.toExternalForm());
+                music = new MediaPlayer(media);
+                music.setCycleCount(MediaPlayer.INDEFINITE);
+                music.setVolume(MainScreen.getVolumeSetting());
+                music.play();
+
+                AudioManager.register(music);
+            }
         } catch (Throwable ignored) {
-            img = null;
         }
-        ImageView iv = new ImageView(img);
-        iv.setPreserveRatio(true);
-        iv.setFitWidth(HERO_W);
-        iv.setFitHeight(HERO_H);
-        iv.setMouseTransparent(true);
-        return iv;
+    }
+
+    public void stopMapMusic() {
+        try {
+            boolean exists = music != null;
+            if (exists) {
+                AudioManager.unregister(music);
+                music.stop();
+                music.dispose();
+                music = null;
+            }
+        } catch (Throwable ignored) {
+        }
     }
 
     // ---------------- colisiones ----------------
@@ -506,10 +537,9 @@ public class SkyDungeon {
 
                 if (root.getScene() == null || !root.isFocused()) {
                     clearInputState();
-                    return;
+                } else {
+                    updateAndMove(dt);
                 }
-
-                updateAndMove(dt);
             }
         };
     }
@@ -542,14 +572,14 @@ public class SkyDungeon {
             vy += HERO_SPEED;
         }
 
-        if (vx == 0 && vy == 0) {
-            return;
+        boolean shouldMove = !(vx == 0 && vy == 0);
+        if (shouldMove) {
+            moveHero(vx * dt, vy * dt);
         }
-
-        moveHero(vx * dt, vy * dt);
     }
 
     private void moveHero(double dx, double dy) {
+
         double curX = heroView.getLayoutX();
         double curY = heroView.getLayoutY();
 
@@ -559,10 +589,10 @@ public class SkyDungeon {
         Rectangle2D heroRect = new Rectangle2D(proposedX, proposedY, HERO_W, HERO_H);
         boolean collision = false;
 
-        for (Obstacle ob : obstacles) {
-            if (heroRect.intersects(ob.collisionRect)) {
+        for (int i = 0; i < obstacles.size() && !collision; i++) {
+            Obstacle ob = obstacles.get(i);
+            if (ob != null && ob.collisionRect != null && heroRect.intersects(ob.collisionRect)) {
                 collision = true;
-                break;
             }
         }
 
@@ -570,22 +600,21 @@ public class SkyDungeon {
             heroView.setLayoutX(proposedX);
             heroView.setLayoutY(proposedY);
         } else {
-            // Intento separar ejes X/Y para movimiento "slide"
             Rectangle2D heroRectX = new Rectangle2D(proposedX, curY, HERO_W, HERO_H);
             Rectangle2D heroRectY = new Rectangle2D(curX, proposedY, HERO_W, HERO_H);
 
             boolean canMoveX = true;
             boolean canMoveY = true;
 
-            for (Obstacle ob : obstacles) {
-                if (heroRectX.intersects(ob.collisionRect)) {
-                    canMoveX = false;
-                }
-                if (heroRectY.intersects(ob.collisionRect)) {
-                    canMoveY = false;
-                }
-                if (!canMoveX && !canMoveY) {
-                    break;
+            for (int i = 0; i < obstacles.size() && (canMoveX || canMoveY); i++) {
+                Obstacle ob = obstacles.get(i);
+                if (ob != null && ob.collisionRect != null) {
+                    if (heroRectX.intersects(ob.collisionRect)) {
+                        canMoveX = false;
+                    }
+                    if (heroRectY.intersects(ob.collisionRect)) {
+                        canMoveY = false;
+                    }
                 }
             }
 
@@ -620,13 +649,13 @@ public class SkyDungeon {
     }
 
     private static double clamp(double v, double lo, double hi) {
+        double result = v;
         if (v < lo) {
-            return lo;
+            result = lo;
+        } else if (v > hi) {
+            result = hi;
         }
-        if (v > hi) {
-            return hi;
-        }
-        return v;
+        return result;
     }
 
     private void clearInputState() {
@@ -634,37 +663,8 @@ public class SkyDungeon {
 
     }
 
-    public void startMapMusic() {
-        try {
-            stopMapMusic();
-            URL res = getClass().getResource("/Resources/music/skyFinalDungeon.mp3");
-            boolean hasRes = res != null;
-            if (hasRes) {
-                Media media = new Media(res.toExternalForm());
-                music = new MediaPlayer(media);
-                music.setCycleCount(MediaPlayer.INDEFINITE);
-                music.setVolume(MainScreen.getVolumeSetting());
-                music.play();
 
-                AudioManager.register(music);
-            }
-        } catch (Throwable ignored) {
-        }
-    }
-
-    public void stopMapMusic() {
-        try {
-            boolean exists = music != null;
-            if (exists) {
-                AudioManager.unregister(music);
-                music.stop();
-                music.dispose();
-                music = null;
-            }
-        } catch (Throwable ignored) {
-        }
-    }
-
+    //---------------Creacion de triggers y obstaculos---------------
     private void drawDebugObstacles() {
         world.getChildren().removeIf(n -> "obstacle_debug".equals(n.getProperties().get("tag")));
         for (Obstacle ob : obstacles) {

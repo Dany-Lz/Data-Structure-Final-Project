@@ -51,13 +51,11 @@ public class CastleSecondFloor {
     private double worldW = VIEW_W;
     private double worldH = VIEW_H;
 
-    private boolean onStartRect = false;
     private Runnable onExitCallback;
     private Rectangle startRect;
     private Rectangle castleRect;
     private final Game game;
 
-    private boolean beforeDungeon = true;
     private ImageView bossView;
 
     // Sistema de colisiones
@@ -70,7 +68,7 @@ public class CastleSecondFloor {
     public enum Direction {
         NONE, N, NE, E, SE, S, SW, W, NW
     }
-    private Direction currentDirection = Direction.NONE;
+    private final Direction currentDirection = Direction.NONE;
 
     // Clase interna para obstáculos
     private static class Obstacle {
@@ -230,35 +228,6 @@ public class CastleSecondFloor {
         return ret;
     }
 
-    private boolean startDungeonMusic(String path) {
-        try {
-            URL res = getClass().getResource(path);
-            if (res == null) {
-                return false;
-            }
-            Media media = new Media(res.toExternalForm());
-            stopDungeonMusic();
-            music = new MediaPlayer(media);
-            music.setCycleCount(MediaPlayer.INDEFINITE);
-            music.setVolume(MainScreen.getVolumeSetting());
-            music.play();
-            return true;
-        } catch (Throwable t) {
-            return false;
-        }
-    }
-
-    private void stopDungeonMusic() {
-        try {
-            if (music != null) {
-                music.stop();
-                music.dispose();
-                music = null;
-            }
-        } catch (Throwable ignored) {
-        }
-    }
-
     private ImageView createHeroView() {
         Image img;
         try {
@@ -272,6 +241,37 @@ public class CastleSecondFloor {
         iv.setFitHeight(HERO_H);
         iv.setMouseTransparent(true);
         return iv;
+    }
+
+    //--------------------Musica---------------------------------------
+    private boolean startDungeonMusic(String path) {
+        boolean started = false;
+        try {
+            URL res = getClass().getResource(path);
+            if (res != null) {
+                Media media = new Media(res.toExternalForm());
+                stopDungeonMusic();
+                music = new MediaPlayer(media);
+                music.setCycleCount(MediaPlayer.INDEFINITE);
+                music.setVolume(MainScreen.getVolumeSetting());
+                music.play();
+                started = true;
+            }
+        } catch (Exception t) {
+            started = false;
+        }
+        return started;
+    }
+
+    private void stopDungeonMusic() {
+        try {
+            if (music != null) {
+                music.stop();
+                music.dispose();
+                music = null;
+            }
+        } catch (Throwable ignored) {
+        }
     }
 
     // ---------------- colisiones ----------------
@@ -733,6 +733,7 @@ public class CastleSecondFloor {
         heroView.toFront();
     }
 
+    //---------------------Controles-----------------------------
     private void installInputHandlers() {
         root.addEventFilter(KeyEvent.KEY_PRESSED, ev -> {
             KeyCode k = ev.getCode();
@@ -830,10 +831,9 @@ public class CastleSecondFloor {
 
                 if (root.getScene() == null || !root.isFocused()) {
                     clearInputState();
-                    return;
+                } else {
+                    updateAndMove(dt);
                 }
-
-                updateAndMove(dt);
             }
         };
     }
@@ -866,14 +866,14 @@ public class CastleSecondFloor {
             vy += HERO_SPEED;
         }
 
-        if (vx == 0 && vy == 0) {
-            return;
+        boolean shouldMove = !(vx == 0 && vy == 0);
+        if (shouldMove) {
+            moveHero(vx * dt, vy * dt);
         }
-
-        moveHero(vx * dt, vy * dt);
     }
 
-    private void moveHero(double dx, double dy) {
+        private void moveHero(double dx, double dy) {
+
         double curX = heroView.getLayoutX();
         double curY = heroView.getLayoutY();
 
@@ -883,10 +883,10 @@ public class CastleSecondFloor {
         Rectangle2D heroRect = new Rectangle2D(proposedX, proposedY, HERO_W, HERO_H);
         boolean collision = false;
 
-        for (Obstacle ob : obstacles) {
-            if (heroRect.intersects(ob.collisionRect)) {
+        for (int i = 0; i < obstacles.size() && !collision; i++) {
+            Obstacle ob = obstacles.get(i);
+            if (ob != null && ob.collisionRect != null && heroRect.intersects(ob.collisionRect)) {
                 collision = true;
-                break;
             }
         }
 
@@ -894,22 +894,21 @@ public class CastleSecondFloor {
             heroView.setLayoutX(proposedX);
             heroView.setLayoutY(proposedY);
         } else {
-            // Intento separar ejes X/Y para movimiento "slide"
             Rectangle2D heroRectX = new Rectangle2D(proposedX, curY, HERO_W, HERO_H);
             Rectangle2D heroRectY = new Rectangle2D(curX, proposedY, HERO_W, HERO_H);
 
             boolean canMoveX = true;
             boolean canMoveY = true;
 
-            for (Obstacle ob : obstacles) {
-                if (heroRectX.intersects(ob.collisionRect)) {
-                    canMoveX = false;
-                }
-                if (heroRectY.intersects(ob.collisionRect)) {
-                    canMoveY = false;
-                }
-                if (!canMoveX && !canMoveY) {
-                    break;
+            for (int i = 0; i < obstacles.size() && (canMoveX || canMoveY); i++) {
+                Obstacle ob = obstacles.get(i);
+                if (ob != null && ob.collisionRect != null) {
+                    if (heroRectX.intersects(ob.collisionRect)) {
+                        canMoveX = false;
+                    }
+                    if (heroRectY.intersects(ob.collisionRect)) {
+                        canMoveY = false;
+                    }
                 }
             }
 
@@ -944,13 +943,13 @@ public class CastleSecondFloor {
     }
 
     private static double clamp(double v, double lo, double hi) {
+        double result = v;
         if (v < lo) {
-            return lo;
+            result = lo;
+        } else if (v > hi) {
+            result = hi;
         }
-        if (v > hi) {
-            return hi;
-        }
-        return v;
+        return result;
     }
 
     private void clearInputState() {
