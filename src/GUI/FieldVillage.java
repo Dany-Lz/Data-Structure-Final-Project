@@ -139,6 +139,31 @@ public class FieldVillage {
         return new Point2D(heroView.getLayoutX(), heroView.getLayoutY());
     }
 
+    public void reloadVillage() {
+        // Limpiar listas de obstáculos y NPCs
+        obstacles.clear();
+        npcs.clear();
+        npcNodes.clear();
+        npcCollisionRects.clear();
+
+        // Volver a cargar todo
+        populateVillageObstacles();
+        addVillagerToList();
+        renderNpcs();
+
+        // Reposicionar al héroe en la entrada
+        positionHeroAtEntrance();
+        createStartRectAtHeroStart();
+
+        // Si está en modo debug, dibujar obstáculos
+        if (debugEnabled) {
+            drawDebugObstacles();
+        }
+
+        // Actualizar cámara
+        updateCamera();
+    }
+
     public void showWithLoading(Runnable onLoaded, Runnable onExit) {
         this.onExitCallback = onExit;
 
@@ -148,17 +173,7 @@ public class FieldVillage {
 
             boolean imageOk = loadBackgroundImage("/Resources/textures/fieldVillage/fieldVillage.png");
             boolean musicOk = startVillageMusic("/Resources/music/fieldVillage.mp3");
-
-            // Primero poblar colisiones
-            populateVillageObstacles();
-
-            // Cargar NPC
-            addVillagerToList();
-            renderNpcs();
-
-            // posicionar al héroe
-            positionHeroAtEntrance();
-            createStartRectAtHeroStart();
+            reloadVillage();
 
             // Dibujar obstáculos en modo debug
             if (debugEnabled) {
@@ -182,6 +197,22 @@ public class FieldVillage {
         Platform.runLater(() -> {
             stopVillageMusic();
             stopMover();
+
+            // Limpiar estado interno
+            obstacles.clear();
+            npcs.clear();
+            npcNodes.clear();
+            npcCollisionRects.clear();
+            currentInteractable = null;
+
+            // Remover todos los elementos gráficos excepto el fondo y héroe
+            world.getChildren().removeIf(n
+                    -> "debug_obstacle".equals(n.getProperties().get("tag"))
+                    || "interact_indicator".equals(n.getProperties().get("tag"))
+                    || "exit_area".equals(n.getProperties().get("tag"))
+                    || n instanceof Text
+            );
+
             try {
                 FXGL.getGameScene().removeUINode(root);
             } catch (Throwable ignored) {
@@ -1267,22 +1298,38 @@ public class FieldVillage {
 
         Runnable returnCallback = () -> {
             Platform.runLater(() -> {
+                // RECARGAR COMPLETAMENTE la aldea
+                reloadVillage();
+
+                // Restaurar música
                 startVillageMusic("/Resources/music/fieldVillage.mp3");
+
+                // Añadir nodo a la escena
                 try {
                     FXGL.getGameScene().addUINode(root);
                 } catch (Throwable ignored) {
                 }
+
+                // Restaurar posición del héroe
                 heroView.setLayoutX(savedHeroTopLeft.getX());
                 heroView.setLayoutY(savedHeroTopLeft.getY());
+
+                // Actualizar cámara
+                updateCamera();
+
+                // Enfocar y comenzar movimiento
                 root.requestFocus();
                 clearInputState();
                 startMover();
+
             });
         };
 
         if (interactable.id.equals("door_JVInn")) {
+            // Crear NUEVA instancia cada vez
             JVInn jvInn = new JVInn(game);
             jvInn.showWithLoading(() -> {
+                // Callback cuando JVInn ha cargado
             }, returnCallback);
         } else if (interactable.id.equals("door_JVMayor")) {
             JVMayor jvMayor = new JVMayor(game);

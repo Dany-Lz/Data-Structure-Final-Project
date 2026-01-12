@@ -135,6 +135,7 @@ public class SkyDungeon {
             populateSkyObstacles();
             positionHeroAtEntrance();
             createStartRectAtHeroStart();
+
             createCastleRect();
 
             PauseTransition wait = new PauseTransition(Duration.millis(600));
@@ -809,7 +810,6 @@ public class SkyDungeon {
                         // Reiniciar la música del SkyDungeon
                         startDungeonMusic("/Resources/music/skyFinalDungeon.mp3");
 
-                        // Reanudar movimiento y foco
                         root.requestFocus();
                         startMover();
                     });

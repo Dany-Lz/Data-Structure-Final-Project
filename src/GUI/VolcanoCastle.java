@@ -49,7 +49,6 @@ public class VolcanoCastle {
     private double worldW = VIEW_W;
     private double worldH = VIEW_H;
 
-    private boolean onStartRect = false;
     private Runnable onExitCallback;
     private Rectangle startRect;
     private Rectangle castleRect;
@@ -202,41 +201,39 @@ public class VolcanoCastle {
         ft.play();
     }
 
-   private boolean loadBackgroundImage(String path) {
-    boolean ret = false;
-    try {
-        Image img = new Image(getClass().getResourceAsStream(path));
-        backgroundView = new ImageView(img);
+    private boolean loadBackgroundImage(String path) {
+        boolean ret = false;
+        try {
+            Image img = new Image(getClass().getResourceAsStream(path));
+            backgroundView = new ImageView(img);
 
-        // Forzar a llenar toda la ventana (sin mantener proporción)
-        backgroundView.setPreserveRatio(false);
-        backgroundView.setSmooth(true);
-        backgroundView.setFitWidth(VIEW_W);
-        backgroundView.setFitHeight(VIEW_H);
+            // Forzar a llenar toda la ventana (sin mantener proporción)
+            backgroundView.setPreserveRatio(false);
+            backgroundView.setSmooth(true);
+            backgroundView.setFitWidth(VIEW_W);
+            backgroundView.setFitHeight(VIEW_H);
 
-        // Ajustar el mundo al tamaño de la vista
-        worldW = VIEW_W;
-        worldH = VIEW_H;
-        world.setPrefSize(worldW, worldH);
+            // Ajustar el mundo al tamaño de la vista
+            worldW = VIEW_W;
+            worldH = VIEW_H;
+            world.setPrefSize(worldW, worldH);
 
-        world.getChildren().clear();
-        world.getChildren().add(backgroundView);
+            world.getChildren().clear();
+            world.getChildren().add(backgroundView);
 
-        if (!world.getChildren().contains(heroView)) {
-            world.getChildren().add(heroView);
-        } else {
-            heroView.toFront();
+            if (!world.getChildren().contains(heroView)) {
+                world.getChildren().add(heroView);
+            } else {
+                heroView.toFront();
+            }
+            ret = true;
+        } catch (Throwable t) {
+            Text err = new Text("No se pudo cargar la imagen del Volcán.");
+            err.setStyle("-fx-font-size: 16px; -fx-fill: #ffdddd;");
+            root.getChildren().add(err);
         }
-        ret = true;
-    } catch (Throwable t) {
-        Text err = new Text("No se pudo cargar la imagen del Volcán.");
-        err.setStyle("-fx-font-size: 16px; -fx-fill: #ffdddd;");
-        root.getChildren().add(err);
+        return ret;
     }
-    return ret;
-}
-
-
 
     private boolean startDungeonMusic(String path) {
         boolean started = false;
@@ -313,8 +310,7 @@ public class VolcanoCastle {
             {300.999406, 310.07943600000027},
             {340.999406, 310.07943600000027},
             {370.999406, 310.7943600000027},
-            {410.999406, 310.07943600000027},
-        };
+            {410.999406, 310.07943600000027},};
 
         int idx = 1;
         for (double[] p : COLLISIONS) {
@@ -331,7 +327,7 @@ public class VolcanoCastle {
     private void positionHeroAtEntrance() {
 
         double startX = 354.81;
-        double startY =  552.0;
+        double startY = 552.0;
         heroView.setLayoutX(startX);
         heroView.setLayoutY(startY);
         updateCamera();
@@ -436,10 +432,7 @@ public class VolcanoCastle {
                 } else {
                     world.getChildren().removeIf(n -> "obstacle_debug".equals(n.getProperties().get("tag")));
                 }
-                for (Task t : game.getHero().getCompletedTasks()) {
-                    System.out.print(t.getName());
 
-                }
             }
             if (k == KeyCode.ENTER) {
                 checkCastleTrigger();
@@ -488,10 +481,9 @@ public class VolcanoCastle {
 
                 if (root.getScene() == null || !root.isFocused()) {
                     clearInputState();
-                    return;
+                } else {
+                    updateAndMove(dt);
                 }
-
-                updateAndMove(dt);
             }
         };
     }
@@ -524,11 +516,10 @@ public class VolcanoCastle {
             vy += HERO_SPEED;
         }
 
-        if (vx == 0 && vy == 0) {
-            return;
+        // Solo mover si hay velocidad en algún eje
+        if (vx != 0 || vy != 0) {
+            moveHero(vx * dt, vy * dt);
         }
-
-        moveHero(vx * dt, vy * dt);
     }
 
     private void moveHero(double dx, double dy) {
@@ -541,11 +532,15 @@ public class VolcanoCastle {
         Rectangle2D heroRect = new Rectangle2D(proposedX, proposedY, HERO_W, HERO_H);
         boolean collision = false;
 
-        for (Obstacle ob : obstacles) {
+        // Primer bucle sin break
+        int i = 0;
+        int obstacleCount = obstacles.size();
+        while (i < obstacleCount && !collision) {
+            Obstacle ob = obstacles.get(i);
             if (heroRect.intersects(ob.collisionRect)) {
                 collision = true;
-                break;
             }
+            i++;
         }
 
         if (!collision) {
@@ -559,16 +554,24 @@ public class VolcanoCastle {
             boolean canMoveX = true;
             boolean canMoveY = true;
 
-            for (Obstacle ob : obstacles) {
-                if (heroRectX.intersects(ob.collisionRect)) {
+            // Segundo bucle sin break
+            i = 0;
+            boolean stopChecking = false;
+            while (i < obstacleCount && !stopChecking) {
+                Obstacle ob = obstacles.get(i);
+
+                if (canMoveX && heroRectX.intersects(ob.collisionRect)) {
                     canMoveX = false;
                 }
-                if (heroRectY.intersects(ob.collisionRect)) {
+                if (canMoveY && heroRectY.intersects(ob.collisionRect)) {
                     canMoveY = false;
                 }
+
                 if (!canMoveX && !canMoveY) {
-                    break;
+                    stopChecking = true;
                 }
+
+                i++;
             }
 
             if (canMoveX) {
@@ -602,13 +605,15 @@ public class VolcanoCastle {
     }
 
     private static double clamp(double v, double lo, double hi) {
+        double result = v;
+
         if (v < lo) {
-            return lo;
+            result = lo;
+        } else if (v > hi) {
+            result = hi;
         }
-        if (v > hi) {
-            return hi;
-        }
-        return v;
+
+        return result;
     }
 
     private void clearInputState() {

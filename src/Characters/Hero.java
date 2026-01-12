@@ -1,7 +1,6 @@
 package Characters;
 
 import Items.*;
-import Logic.Game;
 import Tree.*;
 import Misc.*;
 import java.io.Serializable;
@@ -17,7 +16,7 @@ public class Hero implements Serializable {
     private static final long serialVersionUID = 1L;
 
     public enum Location {
-        MAP, FIELD_VILLAGE, FOREST_HOUSE, SWAMP, SWAMP_DUNGEON, SKY_DUNGEON, KINGDOM_CASTLE, UNKNOWN
+        MAP, FIELD_VILLAGE, FOREST_HOUSE, SWAMP, SWAMP_DUNGEON, SKY_DUNGEON, KINGDOM_CASTLE,VOLCANO ,UNKNOWN
     }
 
     private String name;

@@ -264,20 +264,10 @@ public class GameMapScreen {
         if (portal != null && container.getChildren().contains(portal)) {
             container.getChildren().remove(portal);
         }
+        portal = null;
         drawSky = canCreateSkyPortal();
         populateVillagesFromList();
-
-        if (drawSky) {
-            double visualW = 64;
-            double visualH = 48;
-            addVillageAtCenter(new Point2D(666.4054159999995, 416.6147719999999),
-                    visualW, visualH, "SkyPortal");
-
-        }
-
-        if (debugEnabled) {
-            drawDebugObstacles();
-        }
+        populateExtraBlocks();
 
         heroView.setLayoutX(heroX);
         heroView.setLayoutY(heroY);
@@ -873,35 +863,33 @@ public class GameMapScreen {
     public void drawDebugObstacles() {
         container.getChildren().removeIf(n -> "debug".equals(n.getProperties().get("tag")));
 
-        if (!debugEnabled) {
-            return;
-        }
+        if (debugEnabled) {
+            for (Obstacle ob : obstacles) {
+                if (ob.visualRect != null) {
+                    Rectangle rv = new Rectangle(
+                            ob.visualRect.getMinX(), ob.visualRect.getMinY(),
+                            ob.visualRect.getWidth(), ob.visualRect.getHeight());
+                    rv.setFill(Color.rgb(0, 0, 255, 0.12));
+                    rv.setStroke(Color.rgb(0, 0, 120, 0.5));
+                    rv.getProperties().put("tag", "debug");
+                    rv.setMouseTransparent(true);
+                    container.getChildren().add(rv);
+                }
 
-        for (Obstacle ob : obstacles) {
-            if (ob.visualRect != null) {
-                Rectangle rv = new Rectangle(
-                        ob.visualRect.getMinX(), ob.visualRect.getMinY(),
-                        ob.visualRect.getWidth(), ob.visualRect.getHeight());
-                rv.setFill(Color.rgb(0, 0, 255, 0.12));
-                rv.setStroke(Color.rgb(0, 0, 120, 0.5));
-                rv.getProperties().put("tag", "debug");
-                rv.setMouseTransparent(true);
-                container.getChildren().add(rv);
+                Rectangle rc = new Rectangle(
+                        ob.collisionRect.getMinX(), ob.collisionRect.getMinY(),
+                        ob.collisionRect.getWidth(), ob.collisionRect.getHeight());
+                if (ob.type == ObstacleType.VILLAGE) {
+                    rc.setFill(Color.rgb(255, 0, 0, 0.22));
+                    rc.setStroke(Color.rgb(120, 0, 0, 0.6));
+                } else {
+                    rc.setFill(Color.rgb(160, 0, 200, 0.28));
+                    rc.setStroke(Color.rgb(120, 0, 120, 0.6));
+                }
+                rc.getProperties().put("tag", "debug");
+                rc.setMouseTransparent(true);
+                container.getChildren().add(rc);
             }
-
-            Rectangle rc = new Rectangle(
-                    ob.collisionRect.getMinX(), ob.collisionRect.getMinY(),
-                    ob.collisionRect.getWidth(), ob.collisionRect.getHeight());
-            if (ob.type == ObstacleType.VILLAGE) {
-                rc.setFill(Color.rgb(255, 0, 0, 0.22));
-                rc.setStroke(Color.rgb(120, 0, 0, 0.6));
-            } else {
-                rc.setFill(Color.rgb(160, 0, 200, 0.28));
-                rc.setStroke(Color.rgb(120, 0, 120, 0.6));
-            }
-            rc.getProperties().put("tag", "debug");
-            rc.setMouseTransparent(true);
-            container.getChildren().add(rc);
         }
     }
 
@@ -932,12 +920,18 @@ public class GameMapScreen {
                         FXGL.getGameScene().addUINode(root);
                     } catch (Throwable ignored) {
                     }
+
+                    populateVillagesFromList();
+                    populateExtraBlocks();
+                    updatePortalStatus();
+
                     heroView.setLayoutX(savedHeroTopLeft.getX());
                     heroView.setLayoutY(savedHeroTopLeft.getY());
-                    updatePortalStatus();
+
                     if (debugEnabled) {
                         drawDebugObstacles();
                     }
+
                     root.requestFocus();
                     clearInputState();
                     mover.start();
@@ -965,6 +959,7 @@ public class GameMapScreen {
                     }
                     heroView.setLayoutX(savedHeroTopLeft.getX());
                     heroView.setLayoutY(savedHeroTopLeft.getY());
+                    updatePortalStatus();
                     if (debugEnabled) {
                         drawDebugObstacles();
                     }

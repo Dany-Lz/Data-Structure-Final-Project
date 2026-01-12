@@ -766,29 +766,28 @@ public class JVStore {
                         root.getChildren().add(screen);
                         screen.toFront();
                     }
-                    return;
-                }
-
-                // Remover pantalla anterior si existe
-                if (currentShopScreen != null) {
-                    try {
-                        root.getChildren().remove(currentShopScreen);
-                    } catch (Exception e) {
-                        // Ignorar si ya fue removido
+                } else {
+                    // Remover pantalla anterior si existe
+                    if (currentShopScreen != null) {
+                        try {
+                            root.getChildren().remove(currentShopScreen);
+                        } catch (Exception e) {
+                            // Ignorar si ya fue removido
+                        }
                     }
-                }
 
-                // Asegurar que la nueva pantalla no esté ya en root
-                try {
-                    root.getChildren().remove(screen);
-                } catch (Exception e) {
-                    // Ignorar si no estaba
-                }
+                    // Asegurar que la nueva pantalla no esté ya en root
+                    try {
+                        root.getChildren().remove(screen);
+                    } catch (Exception e) {
+                        // Ignorar si no estaba
+                    }
 
-                // Agregar nueva pantalla
-                root.getChildren().add(screen);
-                currentShopScreen = screen;
-                screen.toFront();
+                    // Agregar nueva pantalla
+                    root.getChildren().add(screen);
+                    currentShopScreen = screen;
+                    screen.toFront();
+                }
 
             } catch (Exception e) {
                 System.err.println("Error en showShopScreen: " + e.getMessage());
@@ -1173,7 +1172,6 @@ public class JVStore {
                                 + finalItemTS.getName()
                                 + "\n+" + salePrice[0] + " coins", 1500);
 
-                        // Refrescar pantalla de venta DESPUÉS del toast
                         PauseTransition refreshDelay = new PauseTransition(Duration.millis(1800));
                         refreshDelay.setOnFinished(event -> {
                             Platform.runLater(() -> {
@@ -1183,7 +1181,7 @@ public class JVStore {
                         refreshDelay.play();
 
                     } else {
-                        // Toast bloqueante de ERROR
+
                         showErrorToast("¡SOLD ERROR!\n"
                                 + "Cannot be sold " + finalItemTS.getName(), 1500);
                     }
@@ -1199,10 +1197,6 @@ public class JVStore {
         return row;
     }
 
-    /**
-     * Muestra un toast con overlay bloqueante (impide interacción hasta que
-     * desaparezca)
-     */
     private void showToastWithBlock(String message, int durationMs) {
         Platform.runLater(() -> {
             // 1. Crear overlay bloqueante (semi-transparente)

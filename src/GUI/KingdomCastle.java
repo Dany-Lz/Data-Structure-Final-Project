@@ -602,10 +602,12 @@ public class KingdomCastle {
         startY = clamp(startY, 0, Math.max(0, worldH - HERO_H));
 
         Rectangle2D heroRect = new Rectangle2D(startX, startY, HERO_W, HERO_H);
+        boolean collisionHandled = false;
+
         for (KingdomCastle.Obstacle ob : obstacles) {
-            if (heroRect.intersects(ob.collisionRect)) {
+            if (!collisionHandled && heroRect.intersects(ob.collisionRect)) {
                 startY = ob.collisionRect.getMinY() - HERO_H - 5;
-                break;
+                collisionHandled = true;
             }
         }
 

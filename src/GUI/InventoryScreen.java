@@ -674,6 +674,26 @@ public class InventoryScreen {
                             h.setLastPosY(327.4755660000007);
                             h.setLastLocation(Hero.Location.SKY_DUNGEON);
                         }
+                        case "VolcanoCityEntrance" -> {
+                            h.setLastPosX(868.6131420000022);
+                            h.setLastPosY(1143.106434);
+                            h.setLastLocation(Hero.Location.VOLCANO);
+                        }
+                        case "VolcanoCastle" -> {
+                            h.setLastPosX(868.6131420000022);
+                            h.setLastPosY(1143.106434);
+                            h.setLastLocation(Hero.Location.VOLCANO);
+                        }
+                        case "VolcanoCastleInterior" -> {
+                            h.setLastPosX(868.6131420000022);
+                            h.setLastPosY(1143.106434);
+                            h.setLastLocation(Hero.Location.VOLCANO);
+                        }
+                        case "VolcanoDungeon" -> {
+                            h.setLastPosX(868.6131420000022);
+                            h.setLastPosY(1143.106434);
+                            h.setLastLocation(Hero.Location.VOLCANO);
+                        }
                         default ->
                             h.setLastLocation(Hero.Location.MAP);
                     }
@@ -899,18 +919,18 @@ public class InventoryScreen {
         this.onClose = onClose;
     }
 
-    // Helper: comprueba si 'node' está dentro del árbol de 'ancestor'
     private boolean isDescendant(Node node, Parent ancestor) {
-        boolean result = false;
         Node cur = node;
-        while (cur != null) {
+        boolean found = false;
+
+        while (cur != null && !found) {
             if (cur == ancestor) {
-                result = true;
-                break;
+                found = true;
             }
             cur = cur.getParent();
         }
-        return result;
+
+        return found;
     }
 
     public void show() {

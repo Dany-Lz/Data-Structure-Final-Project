@@ -344,47 +344,40 @@ public class JVMayor {
     private void drawDebugObstacles() {
         world.getChildren().removeIf(n -> "debug_obstacle".equals(n.getProperties().get("tag")));
 
-        if (!debugEnabled) {
-            return;
-        }
+        if (debugEnabled) {
+            for (JVMayor.Obstacle ob : obstacles) {
+                Rectangle rect = new Rectangle(
+                        ob.collisionRect.getMinX(),
+                        ob.collisionRect.getMinY(),
+                        ob.collisionRect.getWidth(),
+                        ob.collisionRect.getHeight()
+                );
 
-        for (JVMayor.Obstacle ob : obstacles) {
-            Rectangle rect = new Rectangle(
-                    ob.collisionRect.getMinX(),
-                    ob.collisionRect.getMinY(),
-                    ob.collisionRect.getWidth(),
-                    ob.collisionRect.getHeight()
-            );
-
-            switch (ob.type) {
-                case HOUSE:
+                // Reemplazar switch con if-else if-else
+                if (ob.type == JVMayor.ObstacleType.HOUSE) {
                     rect.setFill(Color.rgb(139, 69, 19, 0.4));
                     rect.setStroke(Color.rgb(101, 50, 14, 0.8));
-                    break;
-                case TREE:
+                } else if (ob.type == JVMayor.ObstacleType.TREE) {
                     rect.setFill(Color.rgb(34, 139, 34, 0.4));
                     rect.setStroke(Color.rgb(0, 100, 0, 0.8));
-                    break;
-                case WELL:
+                } else if (ob.type == JVMayor.ObstacleType.WELL) {
                     rect.setFill(Color.rgb(105, 105, 105, 0.4));
                     rect.setStroke(Color.rgb(64, 64, 64, 0.8));
-                    break;
-                case FENCE:
+                } else if (ob.type == JVMayor.ObstacleType.FENCE) {
                     rect.setFill(Color.rgb(160, 82, 45, 0.4));
                     rect.setStroke(Color.rgb(101, 50, 14, 0.8));
-                    break;
-                case BUSH:
+                } else if (ob.type == JVMayor.ObstacleType.BUSH) {
                     rect.setFill(Color.rgb(0, 128, 0, 0.4));
                     rect.setStroke(Color.rgb(0, 64, 0, 0.8));
-                    break;
-                default:
+                } else {
                     rect.setFill(Color.rgb(255, 0, 0, 0.3));
                     rect.setStroke(Color.RED);
-            }
+                }
 
-            rect.getProperties().put("tag", "debug_obstacle");
-            rect.setMouseTransparent(true);
-            world.getChildren().add(rect);
+                rect.getProperties().put("tag", "debug_obstacle");
+                rect.setMouseTransparent(true);
+                world.getChildren().add(rect);
+            }
         }
     }
 

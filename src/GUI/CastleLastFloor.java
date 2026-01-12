@@ -71,7 +71,7 @@ public class CastleLastFloor {
     public enum Direction {
         NONE, N, NE, E, SE, S, SW, W, NW
     }
-    private final Direction currentDirection = Direction.NONE;
+    private Direction currentDirection = Direction.NONE;
 
     // Clase interna para obstáculos
     private static class Obstacle {
@@ -235,22 +235,6 @@ public class CastleLastFloor {
         return ret;
     }
 
-    private ImageView createHeroView() {
-        Image img;
-        try {
-            img = new Image(getClass().getResourceAsStream(game.getHero().getSpritePath()));
-        } catch (Throwable ignored) {
-            img = null;
-        }
-        ImageView iv = new ImageView(img);
-        iv.setPreserveRatio(true);
-        iv.setFitWidth(HERO_W);
-        iv.setFitHeight(HERO_H);
-        iv.setMouseTransparent(true);
-        return iv;
-    }
-
-    //--------------------Musica---------------------------------------
     private boolean startDungeonMusic(String path) {
         boolean started = false;
         try {
@@ -281,38 +265,22 @@ public class CastleLastFloor {
         }
     }
 
-    public void startMapMusic() {
+    private ImageView createHeroView() {
+        Image img;
         try {
-            stopMapMusic();
-            URL res = getClass().getResource("/Resources/music/skyFinalDungeon.mp3");
-            boolean hasRes = res != null;
-            if (hasRes) {
-                Media media = new Media(res.toExternalForm());
-                music = new MediaPlayer(media);
-                music.setCycleCount(MediaPlayer.INDEFINITE);
-                music.setVolume(MainScreen.getVolumeSetting());
-                music.play();
-
-                AudioManager.register(music);
-            }
+            img = new Image(getClass().getResourceAsStream(game.getHero().getSpritePath()));
         } catch (Throwable ignored) {
+            img = null;
         }
+        ImageView iv = new ImageView(img);
+        iv.setPreserveRatio(true);
+        iv.setFitWidth(HERO_W);
+        iv.setFitHeight(HERO_H);
+        iv.setMouseTransparent(true);
+        return iv;
     }
 
-    public void stopMapMusic() {
-        try {
-            boolean exists = music != null;
-            if (exists) {
-                AudioManager.unregister(music);
-                music.stop();
-                music.dispose();
-                music = null;
-            }
-        } catch (Throwable ignored) {
-        }
-    }
-
-    // ---------------- colisiones --------------------------------
+    // ---------------- colisiones ----------------
     private void populateCastleObstacles() {
         obstacles.clear();
 
@@ -655,9 +623,9 @@ public class CastleLastFloor {
         }
     }
 
-    // ---------------- movimiento y entradas -----------------------------
+    // ---------------- movimiento y entradas ----------------
     private void positionHeroAtEntrance() {
-
+        // Ajusta estas coordenadas al punto de entrada real del primer piso
         double startX = 121.40199400000095;
         double startY = 0.0;
         heroView.setLayoutX(startX);
@@ -881,7 +849,6 @@ public class CastleLastFloor {
 
     private void moveHero(double dx, double dy) {
         boolean proceed = true;
-
         if (heroView == null) {
             proceed = false;
         }
@@ -903,14 +870,17 @@ public class CastleLastFloor {
         boolean collision = false;
 
         if (proceed && obstacles != null) {
-            for (Obstacle ob : obstacles) {
+            int i = 0;
+            boolean foundCollision = false;
+            while (i < obstacles.size() && !foundCollision) {
+                Obstacle ob = obstacles.get(i);
                 if (ob != null && ob.collisionRect != null) {
                     if (heroRect.intersects(ob.collisionRect)) {
                         collision = true;
-
+                        foundCollision = true;
                     }
-
                 }
+                i++;
             }
         }
 
@@ -924,29 +894,37 @@ public class CastleLastFloor {
             boolean canMoveX = true;
             boolean canMoveY = true;
 
+            // Segundo bucle sin break/continue
             if (obstacles != null) {
-                for (Obstacle ob : obstacles) {
+                int i = 0;
+                boolean stopChecking = false;
+                while (i < obstacles.size() && !stopChecking) {
+                    Obstacle ob = obstacles.get(i);
                     if (ob != null && ob.collisionRect != null) {
-                        if (heroRectX.intersects(ob.collisionRect)) {
+                        if (canMoveX && heroRectX.intersects(ob.collisionRect)) {
                             canMoveX = false;
                         }
-                        if (heroRectY.intersects(ob.collisionRect)) {
+                        if (canMoveY && heroRectY.intersects(ob.collisionRect)) {
                             canMoveY = false;
                         }
+                        if (!canMoveX && !canMoveY) {
+                            stopChecking = true;
+                        }
                     }
-                }
-
-                if (canMoveX) {
-                    heroView.setLayoutX(proposedX);
-                }
-                if (canMoveY) {
-                    heroView.setLayoutY(proposedY);
+                    i++;
                 }
             }
 
-            if (proceed) {
-                updateCamera();
+            if (canMoveX) {
+                heroView.setLayoutX(proposedX);
             }
+            if (canMoveY) {
+                heroView.setLayoutY(proposedY);
+            }
+        }
+
+        if (proceed) {
+            updateCamera();
         }
     }
 
@@ -983,7 +961,37 @@ public class CastleLastFloor {
         keys.clear();
     }
 
-    //------------------Triggers y obstaculos---------------------
+    public void startMapMusic() {
+        try {
+            stopMapMusic();
+            URL res = getClass().getResource("/Resources/music/skyFinalDungeon.mp3");
+            boolean hasRes = res != null;
+            if (hasRes) {
+                Media media = new Media(res.toExternalForm());
+                music = new MediaPlayer(media);
+                music.setCycleCount(MediaPlayer.INDEFINITE);
+                music.setVolume(MainScreen.getVolumeSetting());
+                music.play();
+
+                AudioManager.register(music);
+            }
+        } catch (Throwable ignored) {
+        }
+    }
+
+    public void stopMapMusic() {
+        try {
+            boolean exists = music != null;
+            if (exists) {
+                AudioManager.unregister(music);
+                music.stop();
+                music.dispose();
+                music = null;
+            }
+        } catch (Throwable ignored) {
+        }
+    }
+
     private void drawDebugObstacles() {
 
         if (startRect != null) {
@@ -1109,7 +1117,7 @@ public class CastleLastFloor {
 
     //TODO LO RELACIONADO AL MANEJO DEL BOSS
     public void drawBossDungeon() {
-        if (!game.getHero().existsCompletedTask(game.getTasks().get(0))) {
+        if (!game.getHero().existsCompletedTask(game.searchTask("M000"))) {
             createBossTriggerRects();
 
             boolean skipCreate = false;
@@ -1158,7 +1166,7 @@ public class CastleLastFloor {
     }
 
     private void createBossTriggerRects() {
-        if (!game.getHero().existsCompletedTask(game.getTasks().get(3))) {
+        if (!game.getHero().existsCompletedTask(game.searchTask("M000"))) {
             for (Rectangle r : bossTriggerRects) {
                 try {
                     world.getChildren().remove(r);

@@ -756,10 +756,9 @@ public class VolcanoCityEntrance {
 
                 if (root.getScene() == null || !root.isFocused()) {
                     clearInputState();
-                    return;
+                } else {
+                    updateAndMove(dt);
                 }
-
-                updateAndMove(dt);
             }
         };
     }
@@ -792,11 +791,10 @@ public class VolcanoCityEntrance {
             vy += HERO_SPEED;
         }
 
-        if (vx == 0 && vy == 0) {
-            return;
+        // Solo mover si hay velocidad en algún eje
+        if (vx != 0 || vy != 0) {
+            moveHero(vx * dt, vy * dt);
         }
-
-        moveHero(vx * dt, vy * dt);
     }
 
     private void moveHero(double dx, double dy) {
@@ -809,11 +807,15 @@ public class VolcanoCityEntrance {
         Rectangle2D heroRect = new Rectangle2D(proposedX, proposedY, HERO_W, HERO_H);
         boolean collision = false;
 
-        for (Obstacle ob : obstacles) {
+        // Primer bucle sin break
+        int i = 0;
+        int obstacleCount = obstacles.size();
+        while (i < obstacleCount && !collision) {
+            Obstacle ob = obstacles.get(i);
             if (heroRect.intersects(ob.collisionRect)) {
                 collision = true;
-                break;
             }
+            i++;
         }
 
         if (!collision) {
@@ -827,16 +829,24 @@ public class VolcanoCityEntrance {
             boolean canMoveX = true;
             boolean canMoveY = true;
 
-            for (Obstacle ob : obstacles) {
-                if (heroRectX.intersects(ob.collisionRect)) {
+            // Segundo bucle sin break
+            i = 0;
+            boolean stopChecking = false;
+            while (i < obstacleCount && !stopChecking) {
+                Obstacle ob = obstacles.get(i);
+
+                if (canMoveX && heroRectX.intersects(ob.collisionRect)) {
                     canMoveX = false;
                 }
-                if (heroRectY.intersects(ob.collisionRect)) {
+                if (canMoveY && heroRectY.intersects(ob.collisionRect)) {
                     canMoveY = false;
                 }
+
                 if (!canMoveX && !canMoveY) {
-                    break;
+                    stopChecking = true;
                 }
+
+                i++;
             }
 
             if (canMoveX) {
@@ -870,13 +880,15 @@ public class VolcanoCityEntrance {
     }
 
     private static double clamp(double v, double lo, double hi) {
+        double result = v;
+
         if (v < lo) {
-            return lo;
+            result = lo;
+        } else if (v > hi) {
+            result = hi;
         }
-        if (v > hi) {
-            return hi;
-        }
-        return v;
+
+        return result;
     }
 
     private void clearInputState() {

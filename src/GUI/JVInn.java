@@ -1,7 +1,6 @@
 package GUI;
 
 import Runner.MainScreen;
-import Characters.Hero;
 import Characters.NPC;
 import Characters.Villager;
 import Logic.Game;
@@ -325,13 +324,6 @@ public class JVInn {
     private void populateVillageObstacles() {
         obstacles.clear();
 
-        // Agrega al menos un área de salida (puerta)
-        obstacles.add(new Obstacle(
-                new Rectangle2D(330, 570, 100, 50),
-                ObstacleType.EXIT,
-                "puertaSalida"
-        ));
-
         obstacles.add(new Obstacle(
                 new Rectangle2D(0, 0, 820, 95),
                 ObstacleType.BLOCK,
@@ -407,10 +399,6 @@ public class JVInn {
 
     private void drawDebugObstacles() {
         world.getChildren().removeIf(n -> "debug_obstacle".equals(n.getProperties().get("tag")));
-
-        if (!debugEnabled) {
-            return;
-        }
 
         for (JVInn.Obstacle ob : obstacles) {
             Rectangle rect = new Rectangle(
@@ -587,7 +575,6 @@ public class JVInn {
         showInnDialog();
     }
 
-
     private void handleRestOption(int optionIndex, StackPane modalOverlay) {
         switch (optionIndex) {
             case 0: // Descansar
@@ -601,12 +588,12 @@ public class JVInn {
     }
 
     private void attemptToRest(StackPane modalOverlay) {
-        // Usar el método healAtInn de Game con precio de 150 monedas
-        boolean success = game.healAtInn(150);
+
+        boolean success = game.healAtInn(200);
 
         String resultMessage;
         if (success) {
-            resultMessage = "Your life has fully restored.\n"
+            resultMessage = "Your life has been fully restored.\n"
                     + "Money: " + game.getHero().getMoney() + " coins\n"
                     + "Current life: " + game.getHero().getActualLife() + "/" + game.getHero().getLife();
         } else {
@@ -631,8 +618,6 @@ public class JVInn {
         });
         wait.play();
     }
-
-    
 
     private void fadeOutAndRemoveDialog(StackPane modalOverlay) {
         if (modalOverlay != null && root.getChildren().contains(modalOverlay)) {
@@ -691,22 +676,10 @@ public class JVInn {
             }
 
             if (k == KeyCode.ENTER) {
-            
+
                 if (onStartRect) {
                     clearInputState();
-                    try {
-                        if (game != null && game.getHero() != null) {
-                            Hero h = game.getHero();
-                            h.setLastLocation(Hero.Location.FIELD_VILLAGE);
-                            h.setLastPosX(heroView.getLayoutX());
-                            h.setLastPosY(heroView.getLayoutY());
-                            try {
-                                game.createSaveGame();
-                            } catch (Throwable ignored) {
-                            }
-                        }
-                    } catch (Throwable ignored) {
-                    }
+
                     if (onExitCallback != null) {
                         hide();
                         onExitCallback.run();
@@ -1028,14 +1001,7 @@ public class JVInn {
                 JVInn.ObstacleType.NPC,
                 "Morty"
         ));
-        addNpc(game.getCharacters().get(28), 860.430275999998939, 226.9060919999997);// Cat 1
-        x = 874.659689999999;
-        y = 250.58789999999973;
-        obstacles.add(new JVInn.Obstacle(
-                new Rectangle2D(x, y, 24, 24),
-                JVInn.ObstacleType.NPC,
-                "Cat1"
-        ));
+
         addNpc(game.getCharacters().get(31), 141.29985599999966, 141.5015559999997);// Maya
         x = 144.11312999999961;
         y = 150.28780599999916;
@@ -1044,15 +1010,13 @@ public class JVInn {
                 JVInn.ObstacleType.NPC,
                 "Maya"
         ));
-        addNpc(game.getCharacters().get(33), 1328.3121959999992, 691.752466);// Dog
-        x = 1339.178634;
-        y = 688.9790080000007;
+
+        addNpc(game.getCharacters().get(35), 537.6693479999997, 112.98264400000002);// ShopKeeper
         obstacles.add(new JVInn.Obstacle(
                 new Rectangle2D(x, y, 24, 24),
                 JVInn.ObstacleType.NPC,
-                "Dog"
+                "ShopKeeper"
         ));
-        addNpc(game.getCharacters().get(34), 691.6607640000009, 70.4151640000008);// Mural
 
     }
 
@@ -1531,10 +1495,9 @@ public class JVInn {
         });
     }
 
-
     private void showInnDialog() {
         // Crear mensaje de bienvenida
-        String welcomeMessage = "¡Welcome to Inn!\n"
+        String welcomeMessage = "¡Welcome to our Inn!\n"
                 + "Do you want to rest and restore your health? It cost 150 coins\n\n"
                 + "**Current life: " + game.getHero().getActualLife() + "/" + game.getHero().getLife() + "**\n"
                 + "**Money: " + game.getHero().getMoney() + "**";
@@ -1543,7 +1506,7 @@ public class JVInn {
                 "Host",
                 welcomeMessage,
                 "/Resources/sprites/NPC/host.png", // Usar imagen del posadero
-                new String[]{"Rest (150 coins)", "Back"}
+                new String[]{"Rest (200 coins)", "Back"}
         );
     }
 

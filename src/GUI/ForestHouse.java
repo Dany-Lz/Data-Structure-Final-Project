@@ -11,8 +11,6 @@ import javafx.application.Platform;
 import javafx.geometry.Point2D;
 import javafx.geometry.Rectangle2D;
 import javafx.geometry.Pos;
-import javafx.scene.control.Alert;
-import javafx.scene.control.ButtonType;
 import javafx.scene.image.Image;
 import javafx.scene.image.ImageView;
 import javafx.scene.input.KeyCode;
@@ -30,7 +28,6 @@ import java.net.URL;
 import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.List;
-import java.util.Optional;
 import java.util.Set;
 
 public class ForestHouse {
@@ -482,7 +479,7 @@ public class ForestHouse {
                 ObstacleType.DECORATION,
                 "SacosDerecha"
         ));
-        //aquiii
+
         obstacles.add(new Obstacle(
                 new Rectangle2D(785, 400, 70, 30),
                 ObstacleType.DECORATION,
@@ -1170,8 +1167,105 @@ public class ForestHouse {
 
         swampScene.showWithLoading(() -> {
         }, () -> {
+            // Al regresar del Swamp, cargar directamente el pasaje
+            Platform.runLater(() -> {
+                // Limpiar transiciones y obstáculos
+                transitionRects.clear();
+                obstacles.clear();
 
-            showWithLoading(null, onExitCallback);
+                // Cargar colisiones del pasaje
+                colisionsPassage();
+
+                // Cargar imagen del pasaje
+                loadBackgroundImage("/Resources/textures/forestHouse/forestPassage.png");
+
+                // Crear transiciones del pasaje
+                createTransitionRectsForPassage();
+
+                //     showPassageFromSwamp();
+                // Posicionar al héroe en la entrada del pasaje
+                setHeroPosition(8.528904, 613.4463539999991);
+
+                // Actualizar cámara
+                updateCamera();
+
+                // Mostrar la escena
+                try {
+                    FXGL.getGameScene().addUINode(root);
+                } catch (Throwable ignored) {
+                }
+
+                // Restaurar música (usar la música del pasaje/interior)
+                stopVillageMusic();
+                startVillageMusic("/Resources/music/interiorOST.mp3");
+
+                startMover();
+                root.requestFocus();
+            });
+        });
+    }
+
+    private void createTransitionRectsForPassage() {
+        transitionRects.clear();
+
+        // Salida del pasaje (volver al segundo piso)
+        Rectangle exitPassage = new Rectangle(900, 1150, 20, 80);
+        exitPassage.getProperties().put("tag", "passage_exit");
+        exitPassage.setFill(Color.color(0, 0, 0, 0.0));
+        exitPassage.setStroke(null);
+        exitPassage.setMouseTransparent(true);
+        transitionRects.add(exitPassage);
+
+        // Entrada al Swamp (desde el pasaje)
+        Rectangle swampEntrance = new Rectangle(0, 564, 20, 80);
+        swampEntrance.getProperties().put("tag", "swamp_entrance");
+        swampEntrance.setFill(Color.color(0, 0, 0, 0.0));
+        swampEntrance.setStroke(null);
+        swampEntrance.setMouseTransparent(true);
+        transitionRects.add(swampEntrance);
+
+        for (Rectangle r : transitionRects) {
+            if (!world.getChildren().contains(r)) {
+                world.getChildren().add(r);
+            }
+            r.toBack();
+        }
+        heroView.toFront();
+    }
+    // Método para mostrar directamente el pasaje (útil para cuando regresas de Swamp)
+
+    public void showPassageFromSwamp() {
+        Platform.runLater(() -> {
+            showLoading(true);
+
+            // Cargar imagen del pasaje
+            boolean imageOk = loadBackgroundImage("/Resources/textures/forestHouse/forestPassage.png");
+
+            // Cambiar música a la del interior
+            stopVillageMusic();
+            boolean musicOk = startVillageMusic("/Resources/music/interiorOST.mp3");
+
+            // Configurar colisiones del pasaje
+            obstacles.clear();
+            colisionsPassage();
+
+            // Crear transiciones específicas para el pasaje
+            transitionRects.clear();
+            createTransitionRectsForPassage();
+
+            // Posicionar héroe en la entrada del pasaje (desde Swamp)
+            setHeroPosition(915.65, 1152.0);
+
+            // No crear startRect ya que no se puede salir al mapa desde aquí
+            startRect = null;
+
+            PauseTransition wait = new PauseTransition(Duration.millis(600));
+            wait.setOnFinished(e -> {
+                showLoading(false);
+                fadeInContent();
+                startMover();
+            });
+            wait.play();
         });
     }
 

@@ -130,7 +130,15 @@ public class CombatScreen {
         monstersBox.setPrefWidth(200);
         monstersBox.setLayoutX(10);
         monstersBox.setLayoutY(120);
-        rightPane.getChildren().add(monstersBox);
+        if (boss == null) {
+            centerPane.getChildren().add(monstersBox);
+        } else {
+            rightPane.getChildren().add(monstersBox);
+        }
+
+        rightPane.setPrefWidth(180);
+        centerPane.setPrefSize(440, 600);
+        centerPane.setLayoutX(180);
 
         Rectangle bottomPanel = new Rectangle(800, 96, Color.rgb(10, 10, 10, 0.86));
         bottomPanel.setLayoutX(0);
@@ -157,13 +165,26 @@ public class CombatScreen {
             monsterViews.add(mv);
             VBox wrapper = new VBox(6);
             wrapper.setAlignment(Pos.CENTER);
+
+            // Texto del monstruo con MISMO ESTILO que los monstruos estándar
             Text name = new Text(m.getName());
-            name.setFill(Color.WHITE);
-            name.setFont(Font.font(12));
-            wrapper.getChildren().addAll(mv, name);
+            name.setFill(Color.YELLOW);          // letras amarillas
+            name.setStroke(Color.BLACK);         // borde negro
+            name.setStrokeWidth(0.5);
+            name.setFont(Font.font("System Bold", 18));
+            StackPane nameContainer = new StackPane(name);
+            nameContainer.setStyle(
+                    "-fx-background-color: rgba(0, 0, 0, 0.85);" // Negro semi-transparente
+                    + "-fx-background-radius: 4;"
+                    + "-fx-padding: 4 12 4 12;"
+                    + "-fx-border-color: #FFD700;" // Borde dorado para destacar que es un jefe
+                    + "-fx-border-width: 1;"
+                    + "-fx-border-radius: 4;"
+            );
+
+            wrapper.getChildren().addAll(mv, nameContainer);
             wrapper.setMouseTransparent(true);
             monstersBox.getChildren().add(wrapper);
-
         } else {
             // Generar entre 1 y 3 monstruos y colocarlos en monstersBox
             int count = 1 + rnd.nextInt(3);
@@ -175,12 +196,24 @@ public class CombatScreen {
                 monsterViews.add(mv);
                 VBox wrapper = new VBox(6);
                 wrapper.setAlignment(Pos.CENTER);
+
                 Text name = new Text(m.getName());
-                name.setFill(Color.WHITE);
-                name.setFont(Font.font(12));
-                wrapper.getChildren().addAll(mv, name);
+                name.setFill(Color.YELLOW);          // letras amarillas
+                name.setStroke(Color.BLACK);         // borde negro
+                name.setStrokeWidth(0.1);
+                name.setFont(Font.font("System Bold", 12));
+
+                StackPane nameContainer = new StackPane(name);
+                nameContainer.setStyle(
+                        "-fx-background-color: black;"
+                        + "-fx-background-radius: 2;"
+                        + "-fx-padding: 3 8 3 8;"
+                );
+
+                wrapper.getChildren().addAll(mv, nameContainer);
                 wrapper.setMouseTransparent(true);
                 monstersBox.getChildren().add(wrapper);
+
                 i = i + 1;
             }
         }
@@ -215,8 +248,16 @@ public class CombatScreen {
     }
 
     private void setupHeroHpLabel() {
-        heroHpLabel.setStyle("-fx-background-color: rgba(0,0,0,0.6); -fx-text-fill: white; -fx-padding: 6 10 6 10; -fx-background-radius: 6;");
-        heroHpLabel.setFont(Font.font(13));
+        heroHpLabel.setStyle(
+                "-fx-text-fill: yellow;" // texto amarillo
+                + "-fx-font-weight: bold;"
+                + "-fx-font-size: 16px;"
+                + "-fx-effect: dropshadow( one-pass-box , black , 1 , 1 , 1 , 0 ),"
+                + "dropshadow( one-pass-box , black , 1 , 1 , -1 , 0 ),"
+                + "dropshadow( one-pass-box , black , 1 , 1 , 0 , 1 ),"
+                + "dropshadow( one-pass-box , black , 1 , 1 , 0 , -1 );"
+        );
+
         heroHpLabel.setMouseTransparent(true);
         StackPane.setAlignment(heroHpLabel, Pos.TOP_RIGHT);
         heroHpLabel.setTranslateX(-12);
@@ -274,13 +315,13 @@ public class CombatScreen {
         ImageView iv = new ImageView(img);
         if (boss == null) {
             iv.setPreserveRatio(true);
-            iv.setFitWidth(95);
-            iv.setFitHeight(95);
+            iv.setFitWidth(105);
+            iv.setFitHeight(105);
             iv.setSmooth(true);
         } else {
             iv.setPreserveRatio(true);
-            iv.setFitWidth(200);
-            iv.setFitHeight(200);
+            iv.setFitWidth(250);
+            iv.setFitHeight(250);
             iv.setSmooth(true);
         }
 
@@ -305,13 +346,29 @@ public class CombatScreen {
         heroIv.setLayoutX(leftMargin);
         heroIv.setLayoutY(layoutY);
 
-        Text name = new Text((game != null && game.getHero() != null) ? game.getHero().getName() : (heroForIcon != null ? heroForIcon.getName() : "Heroe"));
-        name.setFill(Color.WHITE);
-        name.setFont(Font.font(14));
-        name.setLayoutX(leftMargin);
-        name.setLayoutY(layoutY + ivHeight + 18);
+        Text name = new Text(
+                (game != null && game.getHero() != null)
+                ? game.getHero().getName()
+                : (heroForIcon != null ? heroForIcon.getName() : "Heroe")
+        );
 
-        leftPane.getChildren().addAll(heroIv, name);
+        name.setFill(Color.YELLOW);
+        name.setStroke(Color.BLACK);
+        name.setStrokeWidth(0.1);
+        name.setFont(Font.font("System Bold", 14));
+
+        StackPane nameContainer = new StackPane(name);
+        nameContainer.setStyle(
+                "-fx-background-color: black;"
+                + "-fx-background-radius: 4;"
+                + "-fx-padding: 3 8 3 8;"
+        );
+
+        nameContainer.setLayoutX(leftMargin);
+        nameContainer.setLayoutY(layoutY + ivHeight + 18);
+
+        leftPane.getChildren().addAll(heroIv, nameContainer);
+
     }
 
     private void createActionButtons() {
@@ -724,50 +781,50 @@ public class CombatScreen {
 
         private void showNext() {
             String msg = q.poll();
+
             if (msg == null) {
                 showing = false;
-                return;
-            }
+            } else {
+                Label lbl = new Label(msg);
+                lbl.setStyle("-fx-background-color: rgba(0,0,0,0.75); -fx-text-fill: white; -fx-padding: 10 16 10 16; -fx-background-radius: 8; -fx-font-size: 13;");
+                lbl.setOpacity(0.0);
 
-            Label lbl = new Label(msg);
-            lbl.setStyle("-fx-background-color: rgba(0,0,0,0.75); -fx-text-fill: white; -fx-padding: 10 16 10 16; -fx-background-radius: 8; -fx-font-size: 13;");
-            lbl.setOpacity(0.0);
+                StackPane container = new StackPane(lbl);
+                container.setPickOnBounds(false);
+                container.setMouseTransparent(true);
+                container.setPrefSize(800, 600);
 
-            StackPane container = new StackPane(lbl);
-            container.setPickOnBounds(false);
-            container.setMouseTransparent(true);
-            container.setPrefSize(800, 600);
+                StackPane.setAlignment(lbl, Pos.BOTTOM_CENTER);
+                lbl.setTranslateY(-72);
 
-            StackPane.setAlignment(lbl, Pos.BOTTOM_CENTER);
-            lbl.setTranslateY(-72);
-
-            try {
-                if (root != null) {
-                    root.getChildren().add(container);
-                }
-            } catch (Throwable ignored) {
-            }
-
-            FadeTransition fadeIn = new FadeTransition(javafx.util.Duration.seconds(FADE_SECONDS), lbl);
-            fadeIn.setFromValue(0.0);
-            fadeIn.setToValue(1.0);
-
-            PauseTransition pause = new PauseTransition(javafx.util.Duration.seconds(DURATION_SECONDS));
-
-            FadeTransition fadeOut = new FadeTransition(javafx.util.Duration.seconds(FADE_SECONDS), lbl);
-            fadeOut.setFromValue(1.0);
-            fadeOut.setToValue(0.0);
-
-            fadeOut.setOnFinished(ev -> {
                 try {
-                    root.getChildren().remove(container);
+                    if (root != null) {
+                        root.getChildren().add(container);
+                    }
                 } catch (Throwable ignored) {
                 }
-                Platform.runLater(this::showNext);
-            });
 
-            SequentialTransition seq = new SequentialTransition(fadeIn, pause, fadeOut);
-            seq.play();
+                FadeTransition fadeIn = new FadeTransition(javafx.util.Duration.seconds(FADE_SECONDS), lbl);
+                fadeIn.setFromValue(0.0);
+                fadeIn.setToValue(1.0);
+
+                PauseTransition pause = new PauseTransition(javafx.util.Duration.seconds(DURATION_SECONDS));
+
+                FadeTransition fadeOut = new FadeTransition(javafx.util.Duration.seconds(FADE_SECONDS), lbl);
+                fadeOut.setFromValue(1.0);
+                fadeOut.setToValue(0.0);
+
+                fadeOut.setOnFinished(ev -> {
+                    try {
+                        root.getChildren().remove(container);
+                    } catch (Throwable ignored) {
+                    }
+                    Platform.runLater(this::showNext);
+                });
+
+                SequentialTransition seq = new SequentialTransition(fadeIn, pause, fadeOut);
+                seq.play();
+            }
         }
 
     }
@@ -895,13 +952,34 @@ public class CombatScreen {
         VBox infoBox = new VBox(3);
 
         Label nameLabel = new Label(ware.getName());
-        nameLabel.setStyle("-fx-font-weight: bold; -fx-font-size: 16px; -fx-text-fill: white;");
+        nameLabel.setStyle(
+                "-fx-font-weight: bold;"
+                + "-fx-font-size: 18px;"
+                + // más grande
+                "-fx-text-fill: #FFFFFF;"
+                + // blanco puro
+                "-fx-effect: dropshadow(gaussian, black, 3, 0.7, 0, 0);" // sombra para contraste
+        );
 
         Label healLabel = new Label("Heals: " + ware.getHealing() + " HP");
-        healLabel.setStyle("-fx-font-size: 14px; -fx-text-fill: #44ff44;");
+        healLabel.setStyle(
+                "-fx-font-weight: bold;"
+                + "-fx-font-size: 16px;"
+                + // más grande
+                "-fx-text-fill: #00FF00;"
+                + // verde más intenso
+                "-fx-effect: dropshadow(gaussian, black, 2, 0.6, 0, 0);"
+        );
 
         Label descLabel = new Label("ID: " + ware.getId());
-        descLabel.setStyle("-fx-font-size: 12px; -fx-text-fill: #aaaaaa;");
+        descLabel.setStyle(
+                "-fx-font-size: 14px;"
+                + // un poco más grande
+                "-fx-text-fill: #CCCCCC;"
+                + // gris más claro
+                "-fx-font-style: italic;"
+                + "-fx-effect: dropshadow(gaussian, black, 2, 0.5, 0, 0);"
+        );
 
         infoBox.getChildren().addAll(nameLabel, healLabel, descLabel);
 

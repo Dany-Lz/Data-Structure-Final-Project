@@ -293,69 +293,69 @@ public class VolcanoCastleInterior {
     private void populateVolcanoObstacles() {
         obstacles.clear();
 
-            obstacles.add(new Obstacle(
-                    new Rectangle2D(0,0, 1200, 100),
-                    ObstacleType.BLOCK,
-                    "pared" 
-            ));
-            obstacles.add(new Obstacle(
-                    new Rectangle2D(535, 143.3083356599997, 30, 40),
-                    ObstacleType.BLOCK,
-                    "columnaV" 
-            ));
-            obstacles.add(new Obstacle(
-                    new Rectangle2D(630,145, 30, 40),
-                    ObstacleType.BLOCK,
-                    "columnaV1" 
-            ));
-             obstacles.add(new Obstacle(
-                    new Rectangle2D(0.0, 143.31720335999967, 480, 80),
-                    ObstacleType.BLOCK,
-                    "monumento" 
-            ));
-              obstacles.add(new Obstacle(
-                    new Rectangle2D(730,145, 500, 80),
-                    ObstacleType.BLOCK,
-                    "monumento1" 
-            ));
-              double[][] COLLISIONS = new double[][]{
-                  {150, 293.02329084},{245, 293.02329084}, 
-                  {205, 390.9809615999999}, {103.92846366000207, 532.10353704}, 
-                  {245, 532.10353704}, {918, 290.1903952200001},
-                  {966.23561808, 398.38800912000096},{1056.0463717800017, 291.2353180799995},
-                  {1055, 531.9494588399999}, {915, 531.9494588399999}
-               };
+        obstacles.add(new Obstacle(
+                new Rectangle2D(0, 0, 1200, 100),
+                ObstacleType.BLOCK,
+                "pared"
+        ));
+        obstacles.add(new Obstacle(
+                new Rectangle2D(535, 143.3083356599997, 30, 40),
+                ObstacleType.BLOCK,
+                "columnaV"
+        ));
+        obstacles.add(new Obstacle(
+                new Rectangle2D(630, 145, 30, 40),
+                ObstacleType.BLOCK,
+                "columnaV1"
+        ));
+        obstacles.add(new Obstacle(
+                new Rectangle2D(0.0, 143.31720335999967, 480, 80),
+                ObstacleType.BLOCK,
+                "monumento"
+        ));
+        obstacles.add(new Obstacle(
+                new Rectangle2D(730, 145, 500, 80),
+                ObstacleType.BLOCK,
+                "monumento1"
+        ));
+        double[][] COLLISIONS = new double[][]{
+            {150, 293.02329084}, {245, 293.02329084},
+            {205, 390.9809615999999}, {103.92846366000207, 532.10353704},
+            {245, 532.10353704}, {918, 290.1903952200001},
+            {966.23561808, 398.38800912000096}, {1056.0463717800017, 291.2353180799995},
+            {1055, 531.9494588399999}, {915, 531.9494588399999}
+        };
 
-            int idx = 1;
-            for (double[] p : COLLISIONS) {
-                obstacles.add(new Obstacle(
+        int idx = 1;
+        for (double[] p : COLLISIONS) {
+            obstacles.add(new Obstacle(
                     new Rectangle2D(p[0], p[1], 30, 70),
                     ObstacleType.BLOCK,
                     "SkyCollision" + idx
-                    ));
-                idx++;
-            }
-            
-             obstacles.add(new Obstacle(
-                    new Rectangle2D(55,393, 80, 65),
-                    ObstacleType.BLOCK,
-                    "drago" 
             ));
-              obstacles.add(new Obstacle(
-                    new Rectangle2D(1065,393, 80, 65),
-                    ObstacleType.BLOCK,
-                    "dragon1" 
-            ));
-               obstacles.add(new Obstacle(
-                    new Rectangle2D(490, 686.3831955600002, 23, 90),
-                    ObstacleType.BLOCK,
-                    "faro" 
-            ));
-                obstacles.add(new Obstacle(
-                    new Rectangle2D( 685,686.3831955600002,25 ,90),
-                    ObstacleType.BLOCK,
-                    "faro1" 
-            ));
+            idx++;
+        }
+
+        obstacles.add(new Obstacle(
+                new Rectangle2D(55, 393, 80, 65),
+                ObstacleType.BLOCK,
+                "drago"
+        ));
+        obstacles.add(new Obstacle(
+                new Rectangle2D(1065, 393, 80, 65),
+                ObstacleType.BLOCK,
+                "dragon1"
+        ));
+        obstacles.add(new Obstacle(
+                new Rectangle2D(490, 686.3831955600002, 23, 90),
+                ObstacleType.BLOCK,
+                "faro"
+        ));
+        obstacles.add(new Obstacle(
+                new Rectangle2D(685, 686.3831955600002, 25, 90),
+                ObstacleType.BLOCK,
+                "faro1"
+        ));
     }
 
     // ---------------- movimiento y entradas ----------------
@@ -394,9 +394,9 @@ public class VolcanoCastleInterior {
             castleRect = null;
         }
         double[] xs = new double[]{
-           (578.1455400000023)
+            (578.1455400000023)
         };
-        double y =  94.38837000000024;
+        double y = 94.38837000000024;
         double minX = xs[0];
         double maxX = xs[0];
         for (double v : xs) {
@@ -515,10 +515,9 @@ public class VolcanoCastleInterior {
 
                 if (root.getScene() == null || !root.isFocused()) {
                     clearInputState();
-                    return;
+                } else {
+                    updateAndMove(dt);
                 }
-
-                updateAndMove(dt);
             }
         };
     }
@@ -551,11 +550,10 @@ public class VolcanoCastleInterior {
             vy += HERO_SPEED;
         }
 
-        if (vx == 0 && vy == 0) {
-            return;
+        // Solo mover si hay velocidad en algún eje
+        if (vx != 0 || vy != 0) {
+            moveHero(vx * dt, vy * dt);
         }
-
-        moveHero(vx * dt, vy * dt);
     }
 
     private void moveHero(double dx, double dy) {
@@ -568,11 +566,15 @@ public class VolcanoCastleInterior {
         Rectangle2D heroRect = new Rectangle2D(proposedX, proposedY, HERO_W, HERO_H);
         boolean collision = false;
 
-        for (Obstacle ob : obstacles) {
+        // Primer bucle sin break
+        int i = 0;
+        int obstacleCount = obstacles.size();
+        while (i < obstacleCount && !collision) {
+            Obstacle ob = obstacles.get(i);
             if (heroRect.intersects(ob.collisionRect)) {
                 collision = true;
-                break;
             }
+            i++;
         }
 
         if (!collision) {
@@ -586,16 +588,24 @@ public class VolcanoCastleInterior {
             boolean canMoveX = true;
             boolean canMoveY = true;
 
-            for (Obstacle ob : obstacles) {
-                if (heroRectX.intersects(ob.collisionRect)) {
+            // Segundo bucle sin break
+            i = 0;
+            boolean stopChecking = false;
+            while (i < obstacleCount && !stopChecking) {
+                Obstacle ob = obstacles.get(i);
+
+                if (canMoveX && heroRectX.intersects(ob.collisionRect)) {
                     canMoveX = false;
                 }
-                if (heroRectY.intersects(ob.collisionRect)) {
+                if (canMoveY && heroRectY.intersects(ob.collisionRect)) {
                     canMoveY = false;
                 }
+
                 if (!canMoveX && !canMoveY) {
-                    break;
+                    stopChecking = true;
                 }
+
+                i++;
             }
 
             if (canMoveX) {
@@ -629,13 +639,15 @@ public class VolcanoCastleInterior {
     }
 
     private static double clamp(double v, double lo, double hi) {
+        double result = v;
+
         if (v < lo) {
-            return lo;
+            result = lo;
+        } else if (v > hi) {
+            result = hi;
         }
-        if (v > hi) {
-            return hi;
-        }
-        return v;
+
+        return result;
     }
 
     private void clearInputState() {
