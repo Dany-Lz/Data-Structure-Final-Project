@@ -70,7 +70,7 @@ public class MainScreen extends GameApplication {
         settings.setWidth(800);
         settings.setHeight(600);
         settings.setAppIcon("icon.png");
-        settings.setVersion("0.1dev");
+        settings.setVersion("v1.0.0");
     }
     
     @Override
@@ -826,6 +826,24 @@ public class MainScreen extends GameApplication {
                             double startY = 327.4755660000007;
                             sky.showWithLoading(() -> {
                                 Platform.runLater(() -> sky.setHeroPosition(startX, startY));
+                            }, () -> {
+                                Platform.runLater(() -> {
+                                    currentMapScreen.show();
+                                    if (h.getLastLocation() == Hero.Location.MAP) {
+                                        currentMapScreen.setHeroPosition(h.getLastPosX(), h.getLastPosY());
+                                    } else {
+                                        currentMapScreen.resetHeroToCenter();
+                                    }
+                                    currentMapScreen.drawDebugObstacles();
+                                });
+                            });
+                        }
+                        case VOLCANO -> {
+                            VolcanoCityEntrance volcano = new VolcanoCityEntrance(game);
+                            double startX = h.getLastPosX();
+                            double startY = h.getLastPosY();
+                            volcano.showWithLoading(() -> {
+                                Platform.runLater(() -> volcano.setHeroPosition(startX, startY));
                             }, () -> {
                                 Platform.runLater(() -> {
                                     currentMapScreen.show();
