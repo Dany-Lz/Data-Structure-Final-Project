@@ -459,7 +459,7 @@ public class Game {
         characters.add(new Monster((Weapon) items.get(2), 20, 14, "Flower Fairy", "/Resources/sprites/Monsters/skyMonster03.png", 290, 290, 200, 180, "Sky"));
         characters.add(new Monster((Weapon) items.get(2), 25, 14, "Demon Harpy", "/Resources/sprites/Monsters/skyMonster04.png", 320, 320, 250, 180, "Sky"));
         characters.add(new Boss((Weapon) items.get(13), 85, 90, "Light Rider", "/Resources/sprites/Monsters/skyBoss01.png", 1500, 1500, 1500, 1000, "SkyBoss"));
-        characters.add(new Boss((Weapon) items.get(13), 125, 100, "Count Artigas", "/Resources/sprites/Monsters/finalBoss.png", 3500, 3500, 2500, 10500, "SkyBoss"));
+        characters.add(new Boss((Weapon) items.get(13), 125, 100, "Count Okafor", "/Resources/sprites/Monsters/finalBoss.png", 3500, 3500, 2500, 10500, "SkyBoss"));
 
         //Monster m = new Monster(weapon, attack, defense, name, sprite, life, actualLife, exp, money, encounter)
     }

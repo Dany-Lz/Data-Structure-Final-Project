@@ -71,6 +71,7 @@ public class MainScreen extends GameApplication {
         settings.setHeight(600);
         settings.setAppIcon("icon.png");
         settings.setVersion("v1.0.0");
+        
     }
     
     @Override
@@ -111,6 +112,12 @@ public class MainScreen extends GameApplication {
             if (proceed) {
                 selectedIndex = (selectedIndex + 1) % labels.length;
                 updateCursorSmooth();
+            }
+        });
+        FXGL.onKeyDown(KeyCode.C, () -> {
+            boolean proceed = !MainScreen.isModalOpen() && !configOpen;
+            if (proceed) {
+                showBlackModal("Credits", " Developed by:\n Alexandro Valdés Piñeda \n Javier A. Soto Villanueva\n Aylin Vazquez Alvarez \n Enrique A. Artigas Nuñez\n Danilo Clausell Sánchez\n Lia Lorena Rondón Martínez\n\n Made with help of RPG Maker Map Creator\n Music from DJ Mudkip and RPG Maker", null);
             }
         });
         

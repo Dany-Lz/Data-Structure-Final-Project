@@ -404,7 +404,6 @@ public class GameMapScreen {
             } else if (k == KeyCode.M) {
                 enterDebugSky();
             }
-
             if (handled) {
                 ev.consume();
             }

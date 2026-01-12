@@ -993,24 +993,9 @@ public class JVInn {
     private void addVillagerToList() {
         double x;
         double y;
-        x = 480.6044819999995;
-        y = 564.4142460000003;
-        addNpc(game.getCharacters().get(26), 463.021721999999, 547.2334619999993);// Morty 1
-        obstacles.add(new JVInn.Obstacle(
-                new Rectangle2D(x, y, 24, 24),
-                JVInn.ObstacleType.NPC,
-                "Morty"
-        ));
 
-        addNpc(game.getCharacters().get(31), 141.29985599999966, 141.5015559999997);// Maya
-        x = 144.11312999999961;
-        y = 150.28780599999916;
-        obstacles.add(new JVInn.Obstacle(
-                new Rectangle2D(x, y, 24, 24),
-                JVInn.ObstacleType.NPC,
-                "Maya"
-        ));
-
+        x = 537.6693479999997;
+        y = 112.98264400000002;
         addNpc(game.getCharacters().get(35), 537.6693479999997, 112.98264400000002);// ShopKeeper
         obstacles.add(new JVInn.Obstacle(
                 new Rectangle2D(x, y, 24, 24),
